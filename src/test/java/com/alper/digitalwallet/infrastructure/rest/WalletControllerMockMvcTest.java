@@ -7,6 +7,7 @@ import com.alper.digitalwallet.application.usecase.GetWalletUseCase;
 import com.alper.digitalwallet.application.usecase.TransferMoneyUseCase;
 import com.alper.digitalwallet.application.usecase.WithdrawMoneyUseCase;
 import com.alper.digitalwallet.domain.model.Transaction;
+import com.alper.digitalwallet.domain.model.Wallet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -106,12 +108,33 @@ class WalletControllerMockMvcTest {
     }
 
     @Test
+    void getWalletByIdReturnsForbiddenWhenTokenUserDiffersWalletOwner() throws Exception {
+        when(getWalletUseCase.executeById(10L)).thenReturn(Wallet.builder().id(10L).userId(2L).build());
+
+        mockMvc.perform(get("/api/v1/wallets/10")
+                        .with(authenticatedUser(1L)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getTransactionsReturnsForbiddenWhenTokenUserDiffersWalletOwner() throws Exception {
+        when(getWalletUseCase.executeById(10L)).thenReturn(Wallet.builder().id(10L).userId(2L).build());
+
+        mockMvc.perform(get("/api/v1/wallets/10/transactions")
+                        .with(authenticatedUser(1L)))
+                .andExpect(status().isForbidden());
+
+        verify(getTransactionsUseCase, never()).execute(eq(10L), any(Pageable.class));
+    }
+
+    @Test
     void getTransactionsAppliesAscSortFromPageable() throws Exception {
         Page<Transaction> page = new PageImpl<>(
                 Collections.emptyList(),
                 PageRequest.of(0, 5, Sort.by(Sort.Direction.ASC, "amount")),
                 0
         );
+        when(getWalletUseCase.executeById(10L)).thenReturn(Wallet.builder().id(10L).userId(1L).build());
         when(getTransactionsUseCase.execute(eq(10L), any(Pageable.class))).thenReturn(page);
 
         mockMvc.perform(get("/api/v1/wallets/10/transactions")
@@ -136,6 +159,7 @@ class WalletControllerMockMvcTest {
                 PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "transactionDate")),
                 1
         );
+        when(getWalletUseCase.executeById(10L)).thenReturn(Wallet.builder().id(10L).userId(1L).build());
         when(getTransactionsUseCase.execute(eq(10L), any(Pageable.class))).thenReturn(page);
 
         mockMvc.perform(get("/api/v1/wallets/10/transactions")
@@ -153,6 +177,8 @@ class WalletControllerMockMvcTest {
 
     @Test
     void getTransactionsReturnsBadRequestForInvalidSortBy() throws Exception {
+        when(getWalletUseCase.executeById(10L)).thenReturn(Wallet.builder().id(10L).userId(1L).build());
+
         mockMvc.perform(get("/api/v1/wallets/10/transactions")
                         .with(authenticatedUser(1L))
                         .param("sortBy", "nonExistingField")

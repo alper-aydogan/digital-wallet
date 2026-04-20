@@ -83,8 +83,10 @@ public class WalletController {
 
     @GetMapping("/{walletId}")
     @Operation(summary = "Cuzdan bilgisini ID ile getir")
-    public ResponseEntity<WalletResponse> getWalletById(@PathVariable Long walletId) {
+    public ResponseEntity<WalletResponse> getWalletById(@PathVariable Long walletId, Authentication authentication) {
+        Long authenticatedUserId = getAuthenticatedUserId(authentication);
         Wallet wallet = getWalletUseCase.executeById(walletId);
+        assertUserAccess(authenticatedUserId, wallet.getUserId());
         return ResponseEntity.ok(mapToResponse(wallet));
     }
 
@@ -145,11 +147,16 @@ public class WalletController {
             @Parameter(description = "Sayfa numarası (0-indexed)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Sayfa boyutu") @RequestParam(defaultValue = "10") int size,
             @Parameter(description = "Sıralama alanı") @RequestParam(defaultValue = "transactionDate") String sortBy,
-            @Parameter(description = "Sıralama yönü") @RequestParam(defaultValue = "DESC") String direction) {
+            @Parameter(description = "Sıralama yönü") @RequestParam(defaultValue = "DESC") String direction,
+            Authentication authentication) {
+        Long authenticatedUserId = getAuthenticatedUserId(authentication);
+        Wallet wallet = getWalletUseCase.executeById(walletId);
+        assertUserAccess(authenticatedUserId, wallet.getUserId());
+
         validateSortField(sortBy);
         Sort.Direction sortDirection = Sort.Direction.fromString(direction);
         Pageable pageable = PageRequest.of(page, size, sortDirection, sortBy);
-        Page<Transaction> transactions = getTransactionsUseCase.execute(walletId, pageable);
+        Page<Transaction> transactions = getTransactionsUseCase.execute(wallet.getId(), pageable);
         
         return ResponseEntity.ok(transactions.map(this::mapTransactionToResponse));
     }
