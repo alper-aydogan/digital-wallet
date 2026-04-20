@@ -12,8 +12,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -23,6 +26,9 @@ import java.util.function.Supplier;
 
 @Slf4j
 @Component
+@Profile("!test")
+@ConditionalOnProperty(prefix = "app.rate-limiting", name = "enabled", havingValue = "true")
+@ConditionalOnBean(ProxyManager.class)
 @RequiredArgsConstructor
 public class RateLimitingFilter extends OncePerRequestFilter {
 
@@ -38,25 +44,29 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-
         String remoteAddr = getClientIp(request);
         String endpoint = request.getRequestURI();
 
-        int limitPerMinute = getLimitForEndpoint(endpoint);
-        BucketProxy bucket = resolveBucket(remoteAddr, endpoint, limitPerMinute);
-        ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
+        try {
+            int limitPerMinute = getLimitForEndpoint(endpoint);
+            BucketProxy bucket = resolveBucket(remoteAddr, endpoint, limitPerMinute);
+            ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
 
-        if (!probe.isConsumed()) {
-            long retryAfter = Math.max(1, (long) Math.ceil(probe.getNanosToWaitForRefill() / 1_000_000_000.0));
-            response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-            response.setHeader("Retry-After", String.valueOf(retryAfter));
-            response.setHeader("X-Rate-Limit-Remaining", "0");
-            response.getWriter().write("{\"status\": 429, \"code\": \"RATE_LIMIT_EXCEEDED\", \"message\": \"Too many requests. Retry after " + retryAfter + " seconds\"}");
-            log.warn("Rate limit exceeded for {} on {}", remoteAddr, endpoint);
-            return;
+            if (!probe.isConsumed()) {
+                long retryAfter = Math.max(1, (long) Math.ceil(probe.getNanosToWaitForRefill() / 1_000_000_000.0));
+                response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+                response.setHeader("Retry-After", String.valueOf(retryAfter));
+                response.setHeader("X-Rate-Limit-Remaining", "0");
+                response.getWriter().write("{\"status\": 429, \"code\": \"RATE_LIMIT_EXCEEDED\", \"message\": \"Too many requests. Retry after " + retryAfter + " seconds\"}");
+                log.warn("Rate limit exceeded for {} on {}", remoteAddr, endpoint);
+                return;
+            }
+
+            response.setHeader("X-Rate-Limit-Remaining", String.valueOf(probe.getRemainingTokens()));
+        } catch (Exception ex) {
+            // Fail-open: Redis/Bucket4j issues should not block app availability.
+            log.warn("Rate limiting skipped due to backend error on {} from {}", endpoint, remoteAddr, ex);
         }
-
-        response.setHeader("X-Rate-Limit-Remaining", String.valueOf(probe.getRemainingTokens()));
 
         filterChain.doFilter(request, response);
     }

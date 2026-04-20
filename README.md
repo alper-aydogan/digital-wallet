@@ -72,6 +72,7 @@ curl -X GET http://localhost:8080/api/v1/wallets \
 
 Tarayicidan mini demo ekranini ac:
 - `http://localhost:8080/demo/index.html`
+- `http://localhost:8080/` (ana landing sayfasi)
 
 Demo sayfasinda:
 1. `Demo Token Uret` ile token al
@@ -172,6 +173,7 @@ SPRING_PROFILES_ACTIVE=dev
 FLYWAY_ENABLED=true
 JWT_SECRET=your-secret-key-dev-at-least-32-bytes
 APP_TRUST_PROXY=false
+APP_RATE_LIMITING_ENABLED=false
 REDIS_HOST=localhost
 REDIS_PORT=6379
 ```
@@ -185,6 +187,7 @@ DB_URL=jdbc:postgresql://prod-db:5432/wallet
 DB_USER=prod_user
 DB_PASSWORD=prod_password
 APP_TRUST_PROXY=true
+APP_RATE_LIMITING_ENABLED=true
 REDIS_HOST=prod-redis
 REDIS_PORT=6379
 ```
