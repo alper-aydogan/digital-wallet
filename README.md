@@ -1,60 +1,181 @@
-# Digital Wallet
+# Digital Wallet Application
 
-Spring Boot tabanli basit bir dijital cuzdan API'si.
+Production-ready Spring Boot dijital cuzdan API'si. Clean Architecture + JWT + Flyway Migrations.
 
 ## Ozellikler
-- Cuzdan olusturma
-- Para yatirma
-- DTO + validation
-- Global exception handling (`@RestControllerAdvice`)
-- H2 (dev: file-based, test: in-memory)
+- ✅ Cuzdan olusturma / Para yatirma / Para cekme / Transfer
+- ✅ JWT Authentication
+- ✅ Rate Limiting (10 req/min per user)
+- ✅ Structured JSON Logging + Correlation IDs
+- ✅ Flyway Database Migrations
+- ✅ Docker + Docker Compose (PostgreSQL)
+- ✅ CI/CD Pipeline (GitHub Actions)
+- ✅ Comprehensive Test Suite (16 unit/integration tests)
+- ✅ Global Exception Handling
+- ✅ Swagger/OpenAPI Documentation
+- ✅ Actuator Monitoring
 
 ## Teknolojiler
-- Java 21+
-- Spring Boot 4
+- Java 17+
+- Spring Boot 3.x
 - Spring Web
 - Spring Data JPA
-- Spring Security
-- H2 Database
+- Spring Security (JWT)
+- PostgreSQL (prod) / H2 (dev/test)
+- Flyway Database Migration
+- Docker
 - Maven
 
-## Projeyi Calistirma
+## Quick Start
+
+### Local H2 ile:
 ```bash
 cd /Users/alper/Desktop/java_project/digital-wallet
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
 ```
+- App: http://localhost:8080
+- Swagger: http://localhost:8080/swagger-ui.html
+- Health: http://localhost:8080/actuator/health
 
-## Test
+### Docker PostgreSQL ile:
 ```bash
-cd /Users/alper/Desktop/java_project/digital-wallet
+docker-compose up
+```
+- App: http://localhost:8080
+- PostgreSQL: localhost:5432 (username: postgres, password: postgres)
+
+## Authentication (JWT)
+
+### 1. Login (Token Al)
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "alper",
+    "password": "123"
+  }'
+```
+Response:
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWI..."
+}
+```
+
+### 2. Token ile Istek Yap
+```bash
+curl -X GET http://localhost:8080/api/v1/wallets/1 \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWI..."
+```
+
+## API Endpoints
+
+### Wallets
+- `POST /api/v1/wallets` - Cuzdan olustur
+- `GET /api/v1/wallets/{userId}` - Cuzdan getir
+- `POST /api/v1/wallets/deposit` - Para yatir
+- `POST /api/v1/wallets/withdraw` - Para cek
+- `POST /api/v1/wallets/transfer` - Para transfer
+
+### Transactions
+- `GET /api/v1/wallets/{walletId}/transactions` - Islem gecsemisi (paginated)
+
+### Auth
+- `POST /api/v1/auth/login` - Login (JWT token al)
+
+## Testing
+```bash
 ./mvnw test
+# 16 tests passed
 ```
 
-## API Ornekleri
-### Cuzdan Olustur
-`POST /api/v1/wallets`
+## Monitoring
+- Health Check: `GET /actuator/health`
+- Metrics: `GET /actuator/metrics`
+- Logs: JSON format (ELK/Kibana uyumlu)
 
-Body:
+## Database
+
+### Flyway Migrations
+Migrations otomatik olarak app startup'inda calisir:
+```
+src/main/resources/db/migration/V1__Initial_Schema.sql
+```
+
+### Schema
+- `wallets` - User cuzdan bilgileri
+- `transactions` - Islem gecmisi  
+- `users` - Kullanici bilgileri
+
+## Architecture
+
+Clean Architecture (Layered):
+```
+domain/
+  ├─ model/         (Entity'ler)
+  ├─ repository/    (Port'lar)
+  └─ exception/     (Custom exceptions)
+  
+application/
+  ├─ usecase/       (Business logic)
+  └─ dto/           (Request/Response models)
+  
+infrastructure/
+  ├─ persistence/   (Repository implementations)
+  ├─ rest/          (Controllers, exception handlers)
+  ├─ config/        (Spring configurations)
+  └─ security/      (JWT, Security config)
+```
+
+## Rate Limiting
+- **Global:** 10 requests/minute per user
+- **Login:** 5 requests/minute
+- **Transfer:** 3 requests/minute
+
+Response header `Retry-After` ile bilgi verilir.
+
+## Error Handling
+Standardized error responses:
 ```json
 {
-  "userId": 1,
-  "currency": "TRY"
+  "status": 400,
+  "code": "WALLET_NOT_FOUND",
+  "message": "Cuzdan bulunamadi!",
+  "timestamp": "2026-04-20T14:30:45.123Z"
 }
 ```
 
-### Para Yatir
-`POST /api/v1/wallets/deposit`
+## CI/CD
 
-Body:
-```json
-{
-  "userId": 1,
-  "amount": 100.50
-}
+GitHub Actions ile otomatik test ve Docker build:
+- Her push'da: Unit tests calisir
+- Main branch'e push: Docker image build edilir
+
+## Environment Variables
+
+### Development (.env.dev)
+```
+SPRING_PROFILES_ACTIVE=dev
+FLYWAY_ENABLED=true
+JWT_SECRET=your-secret-key-dev
 ```
 
-## Notlar
-- Varsayilan profile `dev`.
-- H2 Console: `http://localhost:8080/h2-console`
-- Dev DB URL: `jdbc:h2:file:./data/walletdb`
+### Production (.env.prod)
+```
+SPRING_PROFILES_ACTIVE=prod
+FLYWAY_ENABLED=true
+JWT_SECRET=your-secret-key-prod
+DB_URL=jdbc:postgresql://prod-db:5432/wallet
+DB_USER=prod_user
+DB_PASSWORD=prod_password
+```
 
+## Contributing
+1. Fork the repo
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+MIT
