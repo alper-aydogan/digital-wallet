@@ -1,5 +1,6 @@
 package com.alper.digitalwallet.application.usecase;
 
+import com.alper.digitalwallet.domain.exception.InsufficientBalanceException;
 import com.alper.digitalwallet.domain.exception.InvalidAmountException;
 import com.alper.digitalwallet.domain.exception.WalletNotFoundException;
 import com.alper.digitalwallet.domain.model.Transaction;
@@ -15,7 +16,7 @@ import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
-public class DepositMoneyUseCase {
+public class WithdrawMoneyUseCase {
 
     private final WalletRepository walletRepository;
     private final TransactionRepository transactionRepository;
@@ -23,20 +24,24 @@ public class DepositMoneyUseCase {
     @Transactional
     public Wallet execute(Long userId, BigDecimal amount) {
         if (amount == null || amount.signum() <= 0) {
-            throw new InvalidAmountException("Yatirilacak tutar sifirdan buyuk olmalidir!");
+            throw new InvalidAmountException("Cekilecek tutar sifirdan buyuk olmalidir!");
         }
 
         Wallet wallet = walletRepository.findByUserId(userId)
                 .orElseThrow(() -> new WalletNotFoundException("Kullaniciya ait cuzdan bulunamadi!"));
 
-        wallet.setBalance(wallet.getBalance().add(amount));
+        if (wallet.getBalance().compareTo(amount) < 0) {
+            throw new InsufficientBalanceException("Yetersiz bakiye! Mevcut bakiye: " + wallet.getBalance());
+        }
+
+        wallet.setBalance(wallet.getBalance().subtract(amount));
         Wallet updatedWallet = walletRepository.save(wallet);
 
         Transaction transaction = Transaction.builder()
-                .toWalletId(updatedWallet.getId())
+                .fromWalletId(updatedWallet.getId())
                 .amount(amount)
                 .transactionDate(LocalDateTime.now())
-                .description("Para Yatirma Islemi")
+                .description("Para Cekme Islemi")
                 .build();
         transactionRepository.save(transaction);
 
