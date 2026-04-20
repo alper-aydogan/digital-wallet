@@ -3,11 +3,11 @@ package com.alper.digitalwallet.application.usecase;
 import com.alper.digitalwallet.domain.model.Wallet;
 import com.alper.digitalwallet.domain.repository.WalletRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 
-@Component
+@Service
 @RequiredArgsConstructor
 public class CreateWalletUseCase {
 

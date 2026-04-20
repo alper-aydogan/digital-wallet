@@ -18,14 +18,26 @@ public class GlobalExceptionHandler {
         String message = Optional.ofNullable(ex.getBindingResult().getFieldError())
                 .map(FieldError::getDefaultMessage)
                 .orElse("Gecersiz istek");
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, message);
+    }
 
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex) {
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleException(Exception ex) {
+        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Beklenmeyen bir hata olustu");
+    }
+
+    private ResponseEntity<ErrorResponse> buildErrorResponse(HttpStatus status, String message) {
         ErrorResponse response = ErrorResponse.builder()
-                .status(HttpStatus.BAD_REQUEST.value())
+                .status(status.value())
                 .message(message)
                 .timestamp(LocalDateTime.now().toString())
                 .build();
 
-        return ResponseEntity.badRequest().body(response);
+        return ResponseEntity.status(status).body(response);
     }
 }
-

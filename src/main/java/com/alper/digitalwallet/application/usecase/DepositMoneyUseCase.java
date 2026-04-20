@@ -5,13 +5,13 @@ import com.alper.digitalwallet.domain.model.Wallet;
 import com.alper.digitalwallet.domain.repository.TransactionRepository;
 import com.alper.digitalwallet.domain.repository.WalletRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Component
+@Service
 @RequiredArgsConstructor
 public class DepositMoneyUseCase {
 

@@ -17,6 +17,6 @@ public class WalletResponse {
     private Long id;
     private Long userId;
     private BigDecimal balance;
-    private String currency;
+    private String currency;//(para birimi)
 }
 

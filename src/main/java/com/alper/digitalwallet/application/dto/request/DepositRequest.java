@@ -15,6 +15,6 @@ public class DepositRequest {
 
     @NotNull(message = "Tutar bos olamaz")
     @DecimalMin(value = "0.01", message = "Yatirilacak miktar en az 0.01 olmalidir")
-    private BigDecimal amount;
+    private BigDecimal amount; //miktar(tutar)
 }
 
