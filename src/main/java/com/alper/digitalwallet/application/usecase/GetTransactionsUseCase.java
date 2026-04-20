@@ -29,7 +29,7 @@ public class GetTransactionsUseCase {
                 .orElseThrow(() -> new WalletNotFoundException("Cuzdan bulunamadi!"));
 
         // Gelen ve giden işlemleri birlikte getir
-        return transactionRepository.findAllByFromWalletIdOrToWalletId(wallet.getId(), wallet.getId(), pageable);
+        return transactionRepository.findAllByFromWalletIdOrToWalletId(wallet.getId(), pageable);
     }
 }
 

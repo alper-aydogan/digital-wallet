@@ -7,6 +7,7 @@ import com.alper.digitalwallet.domain.exception.WalletException;
 import com.alper.digitalwallet.domain.exception.WalletNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -49,6 +50,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(WalletException.class)
     public ResponseEntity<ErrorResponse> handleWalletException(WalletException ex) {
         return buildErrorResponse(HttpStatus.BAD_REQUEST, "WALLET_ERROR", ex.getMessage());
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
+        return buildErrorResponse(HttpStatus.FORBIDDEN, "FORBIDDEN", ex.getMessage());
     }
 
     @ExceptionHandler(RuntimeException.class)

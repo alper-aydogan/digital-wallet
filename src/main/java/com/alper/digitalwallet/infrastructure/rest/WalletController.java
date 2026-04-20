@@ -27,6 +27,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,11 +40,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Set;
+
 @RestController
 @RequestMapping("/api/v1/wallets")
 @RequiredArgsConstructor
 @Tag(name = "Wallet Management", description = "Cuzdan yonetimi ve para transfer islemi")
 public class WalletController {
+
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("transactionDate", "amount", "id");
 
     private final CreateWalletUseCase createWalletUseCase;
     private final DepositMoneyUseCase depositMoneyUseCase;
@@ -68,8 +74,10 @@ public class WalletController {
         @ApiResponse(responseCode = "200", description = "Cuzdan bilgisi"),
         @ApiResponse(responseCode = "404", description = "Cuzdan bulunamadi")
     })
-    public ResponseEntity<WalletResponse> getWallet(@RequestParam Long userId) {
-        Wallet wallet = getWalletUseCase.execute(userId);
+    public ResponseEntity<WalletResponse> getWallet(@RequestParam(required = false) Long userId, Authentication authentication) {
+        Long authenticatedUserId = getAuthenticatedUserId(authentication);
+        assertUserAccess(authenticatedUserId, userId);
+        Wallet wallet = getWalletUseCase.execute(authenticatedUserId);
         return ResponseEntity.ok(mapToResponse(wallet));
     }
 
@@ -86,8 +94,10 @@ public class WalletController {
         @ApiResponse(responseCode = "200", description = "Para basariyla yatirildi"),
         @ApiResponse(responseCode = "404", description = "Cuzdan bulunamadi")
     })
-    public ResponseEntity<WalletResponse> deposit(@Valid @RequestBody DepositRequest request) {
-        Wallet wallet = depositMoneyUseCase.execute(request.getUserId(), request.getAmount());
+    public ResponseEntity<WalletResponse> deposit(@Valid @RequestBody DepositRequest request, Authentication authentication) {
+        Long authenticatedUserId = getAuthenticatedUserId(authentication);
+        assertUserAccess(authenticatedUserId, request.getUserId());
+        Wallet wallet = depositMoneyUseCase.execute(authenticatedUserId, request.getAmount());
         return ResponseEntity.ok(mapToResponse(wallet));
     }
 
@@ -98,8 +108,10 @@ public class WalletController {
         @ApiResponse(responseCode = "400", description = "Yetersiz bakiye"),
         @ApiResponse(responseCode = "404", description = "Cuzdan bulunamadi")
     })
-    public ResponseEntity<WalletResponse> withdraw(@Valid @RequestBody WithdrawRequest request) {
-        Wallet wallet = withdrawMoneyUseCase.execute(request.getUserId(), request.getAmount());
+    public ResponseEntity<WalletResponse> withdraw(@Valid @RequestBody WithdrawRequest request, Authentication authentication) {
+        Long authenticatedUserId = getAuthenticatedUserId(authentication);
+        assertUserAccess(authenticatedUserId, request.getUserId());
+        Wallet wallet = withdrawMoneyUseCase.execute(authenticatedUserId, request.getAmount());
         return ResponseEntity.ok(mapToResponse(wallet));
     }
 
@@ -112,10 +124,12 @@ public class WalletController {
     })
     public ResponseEntity<TransactionResponse> transfer(
             @Valid @RequestBody TransferRequest request,
+            Authentication authentication,
             @RequestHeader(value = "Idempotency-Key", required = false) 
             @Parameter(description = "Transfer için idempotency anahtarı") String idempotencyKey) {
+        Long authenticatedUserId = getAuthenticatedUserId(authentication);
         Transaction transaction = transferMoneyUseCase.execute(
-                request.getFromUserId(),
+                authenticatedUserId,
                 request.getToUserId(),
                 request.getAmount(),
                 idempotencyKey
@@ -131,9 +145,10 @@ public class WalletController {
             @Parameter(description = "Sayfa numarası (0-indexed)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Sayfa boyutu") @RequestParam(defaultValue = "10") int size,
             @Parameter(description = "Sıralama alanı") @RequestParam(defaultValue = "transactionDate") String sortBy,
-            @Parameter(description = "Sıralama yönü") @RequestParam(defaultValue = "DESC") Sort.Direction direction) {
-        
-        Pageable pageable = PageRequest.of(page, size, direction, sortBy);
+            @Parameter(description = "Sıralama yönü") @RequestParam(defaultValue = "DESC") String direction) {
+        validateSortField(sortBy);
+        Sort.Direction sortDirection = Sort.Direction.fromString(direction);
+        Pageable pageable = PageRequest.of(page, size, sortDirection, sortBy);
         Page<Transaction> transactions = getTransactionsUseCase.execute(walletId, pageable);
         
         return ResponseEntity.ok(transactions.map(this::mapTransactionToResponse));
@@ -157,6 +172,29 @@ public class WalletController {
                 .transactionDate(transaction.getTransactionDate())
                 .description(transaction.getDescription())
                 .build();
+    }
+
+    private Long getAuthenticatedUserId(Authentication authentication) {
+        if (authentication == null || authentication.getPrincipal() == null) {
+            throw new AccessDeniedException("Kimlik dogrulamasi gerekli");
+        }
+        try {
+            return Long.parseLong(authentication.getPrincipal().toString());
+        } catch (NumberFormatException ex) {
+            throw new AccessDeniedException("Gecersiz kimlik bilgisi");
+        }
+    }
+
+    private void assertUserAccess(Long authenticatedUserId, Long requestedUserId) {
+        if (requestedUserId != null && !authenticatedUserId.equals(requestedUserId)) {
+            throw new AccessDeniedException("Baska bir kullanici adina islem yapamazsiniz");
+        }
+    }
+
+    private void validateSortField(String sortBy) {
+        if (!ALLOWED_SORT_FIELDS.contains(sortBy)) {
+            throw new IllegalArgumentException("Gecersiz sortBy alani: " + sortBy);
+        }
     }
 }
 

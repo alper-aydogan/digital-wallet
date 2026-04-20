@@ -15,7 +15,7 @@ public interface JpaTransactionRepository extends JpaRepository<Transaction, Lon
 
 	Page<Transaction> findAllByToWalletId(Long toWalletId, Pageable pageable);
 
-	@Query("SELECT t FROM Transaction t WHERE t.fromWalletId = :walletId OR t.toWalletId = :walletId ORDER BY t.transactionDate DESC")
+	@Query("SELECT t FROM Transaction t WHERE t.fromWalletId = :walletId OR t.toWalletId = :walletId")
 	Page<Transaction> findAllByFromWalletIdOrToWalletId(@Param("walletId") Long walletId, Pageable pageable);
 
 	Optional<Transaction> findByIdempotencyKey(String idempotencyKey);

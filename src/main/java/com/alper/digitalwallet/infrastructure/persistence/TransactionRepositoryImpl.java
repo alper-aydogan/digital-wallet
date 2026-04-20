@@ -32,8 +32,8 @@ public class TransactionRepositoryImpl implements TransactionRepository {
     }
 
     @Override
-    public Page<Transaction> findAllByFromWalletIdOrToWalletId(Long fromWalletId, Long toWalletId, Pageable pageable) {
-        return jpaTransactionRepository.findAllByFromWalletIdOrToWalletId(fromWalletId, pageable);
+    public Page<Transaction> findAllByFromWalletIdOrToWalletId(Long walletId, Pageable pageable) {
+        return jpaTransactionRepository.findAllByFromWalletIdOrToWalletId(walletId, pageable);
     }
 
     @Override

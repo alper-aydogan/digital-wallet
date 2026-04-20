@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 public class WithdrawRequest {
-    @NotNull(message = "Kullanici ID bos olamaz")
+    // Geriye donuk uyumluluk icin tutulur; kimlik kaynagi JWT'dir.
     private Long userId;
 
     @NotNull(message = "Tutar bos olamaz")

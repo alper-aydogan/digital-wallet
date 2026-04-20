@@ -10,8 +10,6 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 public class TransferRequest {
-    @NotNull(message = "Gonderen kullanici ID bos olamaz")
-    private Long fromUserId;
 
     @NotNull(message = "Alan kullanici ID bos olamaz")
     private Long toUserId;
