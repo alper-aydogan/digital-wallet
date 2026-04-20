@@ -39,6 +39,7 @@ build/
 # Environment files
 .env
 .env.*
+!.env.example
 
 # Local development database files
 /data/

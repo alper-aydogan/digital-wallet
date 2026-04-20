@@ -31,18 +31,19 @@ Production-ready Spring Boot dijital cuzdan API'si. Clean Architecture + JWT + F
 ### Local H2 ile:
 ```bash
 cd /Users/alper/Desktop/java_project/digital-wallet
+cp .env.example .env
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 - App: http://localhost:8080
 - Swagger: http://localhost:8080/swagger-ui.html
 - Health: http://localhost:8080/actuator/health
 
-### Docker PostgreSQL ile:
+### Docker altyapisi (PostgreSQL + Redis):
 ```bash
 docker-compose up
 ```
-- App: http://localhost:8080
 - PostgreSQL: localhost:5432 (username: postgres, password: postgres)
+- Redis: localhost:6379
 
 ## Authentication (JWT)
 
@@ -138,9 +139,11 @@ infrastructure/
 ```
 
 ## Rate Limiting
-- **Global:** 10 requests/minute per user
-- **Login:** 5 requests/minute
+- **Global:** 10 requests/minute per user/ip
+- **Login/Auth:** 5 requests/minute
 - **Transfer:** 3 requests/minute
+
+Bucket4j + Redis ile dagitik ortamda calisir.
 
 Response header `Retry-After` ile bilgi verilir.
 
@@ -167,17 +170,23 @@ GitHub Actions ile otomatik test ve Docker build:
 ```
 SPRING_PROFILES_ACTIVE=dev
 FLYWAY_ENABLED=true
-JWT_SECRET=your-secret-key-dev
+JWT_SECRET=your-secret-key-dev-at-least-32-bytes
+APP_TRUST_PROXY=false
+REDIS_HOST=localhost
+REDIS_PORT=6379
 ```
 
 ### Production (.env.prod)
 ```
 SPRING_PROFILES_ACTIVE=prod
 FLYWAY_ENABLED=true
-JWT_SECRET=your-secret-key-prod
+JWT_SECRET=your-secret-key-prod-at-least-32-bytes
 DB_URL=jdbc:postgresql://prod-db:5432/wallet
 DB_USER=prod_user
 DB_PASSWORD=prod_password
+APP_TRUST_PROXY=true
+REDIS_HOST=prod-redis
+REDIS_PORT=6379
 ```
 
 ## Contributing

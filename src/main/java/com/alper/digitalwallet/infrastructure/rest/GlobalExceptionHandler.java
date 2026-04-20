@@ -1,6 +1,7 @@
 package com.alper.digitalwallet.infrastructure.rest;
 
 import com.alper.digitalwallet.domain.exception.InsufficientBalanceException;
+import com.alper.digitalwallet.domain.exception.InvalidCurrencyException;
 import com.alper.digitalwallet.domain.exception.InvalidAmountException;
 import com.alper.digitalwallet.domain.exception.WalletAlreadyExistsException;
 import com.alper.digitalwallet.domain.exception.WalletException;
@@ -45,6 +46,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidAmountException.class)
     public ResponseEntity<ErrorResponse> handleInvalidAmount(InvalidAmountException ex) {
         return buildErrorResponse(HttpStatus.BAD_REQUEST, "INVALID_AMOUNT", ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidCurrencyException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidCurrency(InvalidCurrencyException ex) {
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "INVALID_CURRENCY", ex.getMessage());
     }
 
     @ExceptionHandler(WalletException.class)

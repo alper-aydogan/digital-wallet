@@ -2,6 +2,7 @@ package com.alper.digitalwallet.application.usecase;
 
 import com.alper.digitalwallet.domain.exception.InsufficientBalanceException;
 import com.alper.digitalwallet.domain.exception.InvalidAmountException;
+import com.alper.digitalwallet.domain.exception.InvalidCurrencyException;
 import com.alper.digitalwallet.domain.exception.WalletNotFoundException;
 import com.alper.digitalwallet.domain.model.Transaction;
 import com.alper.digitalwallet.domain.model.Wallet;
@@ -88,6 +89,30 @@ class TransferMoneyUseCaseTest {
         when(walletRepository.findByUserId(2L)).thenReturn(Optional.of(toWallet));
 
         assertThrows(InsufficientBalanceException.class, () ->
+                transferMoneyUseCase.execute(1L, 2L, new BigDecimal("50.00"))
+        );
+    }
+
+    @Test
+    void execute_invalidCurrency() {
+        Wallet fromWallet = Wallet.builder()
+                .id(1L)
+                .userId(1L)
+                .balance(new BigDecimal("100.00"))
+                .currency("TRY")
+                .build();
+
+        Wallet toWallet = Wallet.builder()
+                .id(2L)
+                .userId(2L)
+                .balance(new BigDecimal("50.00"))
+                .currency("USD")
+                .build();
+
+        when(walletRepository.findByUserId(1L)).thenReturn(Optional.of(fromWallet));
+        when(walletRepository.findByUserId(2L)).thenReturn(Optional.of(toWallet));
+
+        assertThrows(InvalidCurrencyException.class, () ->
                 transferMoneyUseCase.execute(1L, 2L, new BigDecimal("50.00"))
         );
     }

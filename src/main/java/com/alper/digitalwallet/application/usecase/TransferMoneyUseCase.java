@@ -1,6 +1,7 @@
 package com.alper.digitalwallet.application.usecase;
 
 import com.alper.digitalwallet.domain.exception.InsufficientBalanceException;
+import com.alper.digitalwallet.domain.exception.InvalidCurrencyException;
 import com.alper.digitalwallet.domain.exception.InvalidAmountException;
 import com.alper.digitalwallet.domain.exception.WalletNotFoundException;
 import com.alper.digitalwallet.domain.model.Transaction;
@@ -45,6 +46,10 @@ public class TransferMoneyUseCase {
 
         Wallet toWallet = walletRepository.findByUserId(toUserId)
                 .orElseThrow(() -> new WalletNotFoundException("Alan cuzdan bulunamadi!"));
+
+        if (!fromWallet.getCurrency().equals(toWallet.getCurrency())) {
+            throw new InvalidCurrencyException("Transfer icin para birimleri ayni olmalidir!");
+        }
 
         if (fromWallet.getBalance().compareTo(amount) < 0) {
             throw new InsufficientBalanceException("Yetersiz bakiye! Mevcut bakiye: " + fromWallet.getBalance());
