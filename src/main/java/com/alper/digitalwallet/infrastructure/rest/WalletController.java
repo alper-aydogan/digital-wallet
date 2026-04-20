@@ -16,12 +16,17 @@ import com.alper.digitalwallet.domain.model.Transaction;
 import com.alper.digitalwallet.domain.model.Wallet;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -71,15 +76,30 @@ public class WalletController {
     }
 
     @PostMapping("/transfer")
-    public ResponseEntity<TransactionResponse> transfer(@Valid @RequestBody TransferRequest request) {
-        Transaction transaction = transferMoneyUseCase.execute(request.getFromUserId(), request.getToUserId(), request.getAmount());
+    public ResponseEntity<TransactionResponse> transfer(
+            @Valid @RequestBody TransferRequest request,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        Transaction transaction = transferMoneyUseCase.execute(
+                request.getFromUserId(),
+                request.getToUserId(),
+                request.getAmount(),
+                idempotencyKey
+        );
         return new ResponseEntity<>(mapTransactionToResponse(transaction), HttpStatus.CREATED);
     }
 
     @GetMapping("/{walletId}/transactions")
-    public ResponseEntity<List<TransactionResponse>> getTransactions(@PathVariable Long walletId) {
-        List<Transaction> transactions = getTransactionsUseCase.execute(walletId);
-        return ResponseEntity.ok(transactions.stream().map(this::mapTransactionToResponse).toList());
+    public ResponseEntity<Page<TransactionResponse>> getTransactions(
+            @PathVariable Long walletId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "transactionDate") String sortBy,
+            @RequestParam(defaultValue = "DESC") Sort.Direction direction) {
+        
+        Pageable pageable = PageRequest.of(page, size, direction, sortBy);
+        Page<Transaction> transactions = getTransactionsUseCase.execute(walletId, pageable);
+        
+        return ResponseEntity.ok(transactions.map(this::mapTransactionToResponse));
     }
 
     private WalletResponse mapToResponse(Wallet wallet) {

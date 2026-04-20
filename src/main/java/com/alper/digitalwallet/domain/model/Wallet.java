@@ -1,12 +1,16 @@
 package com.alper.digitalwallet.domain.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "wallets")
+@Table(name = "wallets", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"userId", "currency"})
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -18,10 +22,17 @@ public class Wallet {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long userId; // Cüzdanın sahibi kim?
+    @NotNull
+    private Long userId;
 
-    private BigDecimal balance; // Ne kadar parası var?
+    @NotNull
+    @DecimalMin(value = "0.0", inclusive = true, message = "Bakiye negatif olamaz")
+    private BigDecimal balance;
 
-    private String currency; // Para birimi ne? (TRY, USD vb.)
+    @NotNull
+    private String currency;
+
+    @Version
+    private Long version;
 }
 

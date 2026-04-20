@@ -22,7 +22,15 @@ public class TransferMoneyUseCase {
     private final TransactionRepository transactionRepository;
 
     @Transactional
-    public Transaction execute(Long fromUserId, Long toUserId, BigDecimal amount) {
+    public Transaction execute(Long fromUserId, Long toUserId, BigDecimal amount, String idempotencyKey) {
+        // Idempotency kontrolü
+        if (idempotencyKey != null) {
+            var existingTx = transactionRepository.findByIdempotencyKey(idempotencyKey);
+            if (existingTx.isPresent()) {
+                return existingTx.get();
+            }
+        }
+
         if (amount == null || amount.signum() <= 0) {
             throw new InvalidAmountException("Transfer tutari sifirdan buyuk olmalidir!");
         }
@@ -53,9 +61,15 @@ public class TransferMoneyUseCase {
                 .amount(amount)
                 .transactionDate(LocalDateTime.now())
                 .description("Para Transferi")
+                .idempotencyKey(idempotencyKey)
                 .build();
 
         return transactionRepository.save(transaction);
+    }
+
+    @Transactional
+    public Transaction execute(Long fromUserId, Long toUserId, BigDecimal amount) {
+        return execute(fromUserId, toUserId, amount, null);
     }
 }
 
