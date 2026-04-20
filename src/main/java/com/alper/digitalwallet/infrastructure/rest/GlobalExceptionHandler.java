@@ -22,42 +22,43 @@ public class GlobalExceptionHandler {
         String message = Optional.ofNullable(ex.getBindingResult().getFieldError())
                 .map(FieldError::getDefaultMessage)
                 .orElse("Gecersiz istek");
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, message);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", message);
     }
 
     @ExceptionHandler(WalletNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleWalletNotFound(WalletNotFoundException ex) {
-        return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+        return buildErrorResponse(HttpStatus.NOT_FOUND, "WALLET_NOT_FOUND", ex.getMessage());
     }
 
     @ExceptionHandler(InsufficientBalanceException.class)
     public ResponseEntity<ErrorResponse> handleInsufficientBalance(InsufficientBalanceException ex) {
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "INSUFFICIENT_BALANCE", ex.getMessage());
     }
 
     @ExceptionHandler(InvalidAmountException.class)
     public ResponseEntity<ErrorResponse> handleInvalidAmount(InvalidAmountException ex) {
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "INVALID_AMOUNT", ex.getMessage());
     }
 
     @ExceptionHandler(WalletException.class)
     public ResponseEntity<ErrorResponse> handleWalletException(WalletException ex) {
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "WALLET_ERROR", ex.getMessage());
     }
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex) {
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "RUNTIME_ERROR", ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception ex) {
-        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Beklenmeyen bir hata olustu");
+        return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "Beklenmeyen bir hata olustu");
     }
 
-    private ResponseEntity<ErrorResponse> buildErrorResponse(HttpStatus status, String message) {
+    private ResponseEntity<ErrorResponse> buildErrorResponse(HttpStatus status, String code, String message) {
         ErrorResponse response = ErrorResponse.builder()
                 .status(status.value())
+                .code(code)
                 .message(message)
                 .timestamp(LocalDateTime.now().toString())
                 .build();

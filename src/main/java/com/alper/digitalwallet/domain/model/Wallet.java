@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 
 @Entity
 @Table(name = "wallets", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"userId", "currency"})
+    @UniqueConstraint(columnNames = {"userId"})
 })
 @Getter
 @Setter
