@@ -8,6 +8,7 @@ import com.alper.digitalwallet.domain.model.Wallet;
 import com.alper.digitalwallet.domain.repository.TransactionRepository;
 import com.alper.digitalwallet.domain.repository.WalletRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,7 +24,7 @@ public class TransferMoneyUseCase {
 
     @Transactional
     public Transaction execute(Long fromUserId, Long toUserId, BigDecimal amount, String idempotencyKey) {
-        // Idempotency kontrolü
+        // Idempotency kontrolü: aynı key varsa cached sonucu dön
         if (idempotencyKey != null) {
             var existingTx = transactionRepository.findByIdempotencyKey(idempotencyKey);
             if (existingTx.isPresent()) {
@@ -64,7 +65,18 @@ public class TransferMoneyUseCase {
                 .idempotencyKey(idempotencyKey)
                 .build();
 
-        return transactionRepository.save(transaction);
+        try {
+            return transactionRepository.save(transaction);
+        } catch (DataIntegrityViolationException e) {
+            // Idempotency key zaten varsa, aynı işlemi yeniden oku ve dön
+            if (idempotencyKey != null) {
+                var cachedTx = transactionRepository.findByIdempotencyKey(idempotencyKey);
+                if (cachedTx.isPresent()) {
+                    return cachedTx.get();
+                }
+            }
+            throw e;
+        }
     }
 
     @Transactional

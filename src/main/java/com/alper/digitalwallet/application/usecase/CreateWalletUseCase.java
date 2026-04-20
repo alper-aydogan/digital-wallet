@@ -1,5 +1,6 @@
 package com.alper.digitalwallet.application.usecase;
 
+import com.alper.digitalwallet.domain.exception.WalletAlreadyExistsException;
 import com.alper.digitalwallet.domain.model.Wallet;
 import com.alper.digitalwallet.domain.repository.WalletRepository;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +15,10 @@ public class CreateWalletUseCase {
     private final WalletRepository walletRepository;
 
     public Wallet execute(Long userId, String currency) {
-        // Eğer kullanıcının zaten cüzdanı varsa hata fırlatabilirsin (Opsiyonel)
+        // Duplicate kontrolü: aynı userId için cüzdan varsa hata fırlat
+        if (walletRepository.findByUserId(userId).isPresent()) {
+            throw new WalletAlreadyExistsException("Bu kullanici icin zaten bir cuzdan var!");
+        }
 
         Wallet wallet = Wallet.builder()
                 .userId(userId)

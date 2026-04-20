@@ -32,6 +32,11 @@ public class TransactionRepositoryImpl implements TransactionRepository {
     }
 
     @Override
+    public Page<Transaction> findAllByFromWalletIdOrToWalletId(Long fromWalletId, Long toWalletId, Pageable pageable) {
+        return jpaTransactionRepository.findAllByFromWalletIdOrToWalletId(fromWalletId, pageable);
+    }
+
+    @Override
     public Optional<Transaction> findByIdempotencyKey(String idempotencyKey) {
         return jpaTransactionRepository.findByIdempotencyKey(idempotencyKey);
     }

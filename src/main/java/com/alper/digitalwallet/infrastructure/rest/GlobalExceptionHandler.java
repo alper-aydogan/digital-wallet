@@ -2,6 +2,7 @@ package com.alper.digitalwallet.infrastructure.rest;
 
 import com.alper.digitalwallet.domain.exception.InsufficientBalanceException;
 import com.alper.digitalwallet.domain.exception.InvalidAmountException;
+import com.alper.digitalwallet.domain.exception.WalletAlreadyExistsException;
 import com.alper.digitalwallet.domain.exception.WalletException;
 import com.alper.digitalwallet.domain.exception.WalletNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -23,6 +24,11 @@ public class GlobalExceptionHandler {
                 .map(FieldError::getDefaultMessage)
                 .orElse("Gecersiz istek");
         return buildErrorResponse(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", message);
+    }
+
+    @ExceptionHandler(WalletAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleWalletAlreadyExists(WalletAlreadyExistsException ex) {
+        return buildErrorResponse(HttpStatus.CONFLICT, "WALLET_ALREADY_EXISTS", ex.getMessage());
     }
 
     @ExceptionHandler(WalletNotFoundException.class)

@@ -14,6 +14,8 @@ public interface TransactionRepository {
 
     Page<Transaction> findAllByToWalletId(Long walletId, Pageable pageable);
 
+    Page<Transaction> findAllByFromWalletIdOrToWalletId(Long fromWalletId, Long toWalletId, Pageable pageable);
+
     Optional<Transaction> findByIdempotencyKey(String idempotencyKey);
 }
 
