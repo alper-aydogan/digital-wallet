@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Digital Wallet Demo</title>
+  <link rel="stylesheet" href="/demo/styles.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>Digital Wallet Demo</h1>
+    <p class="muted">Kisa demo paneli: token uret, islem yap, sonucu gor.</p>
+
+    <section class="card">
+      <h2>1) Demo Token Uret (dev)</h2>
+      <form id="tokenForm" class="grid">
+        <label>
+          User ID
+          <input id="tokenUserId" type="number" min="1" required value="1" />
+        </label>
+        <button type="submit">Token Uret</button>
+      </form>
+      <label>
+        JWT Token
+        <textarea id="jwtToken" rows="3" placeholder="Bearer token buraya gelir ya da manuel yapistir"></textarea>
+      </label>
+    </section>
+
+    <section class="card">
+      <h2>2) Cuzdan Olustur</h2>
+      <form id="createWalletForm" class="grid two">
+        <label>
+          User ID
+          <input id="createUserId" type="number" min="1" required value="1" />
+        </label>
+        <label>
+          Currency
+          <input id="createCurrency" type="text" maxlength="3" required value="TRY" />
+        </label>
+        <button type="submit">Cuzdan Olustur</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>3) Bakiye Islemleri</h2>
+      <form id="depositForm" class="grid two">
+        <label>
+          Deposit Amount
+          <input id="depositAmount" type="number" min="0.01" step="0.01" required value="100" />
+        </label>
+        <button type="submit">Deposit</button>
+      </form>
+
+      <form id="withdrawForm" class="grid two">
+        <label>
+          Withdraw Amount
+          <input id="withdrawAmount" type="number" min="0.01" step="0.01" required value="25" />
+        </label>
+        <button type="submit">Withdraw</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>4) Transfer</h2>
+      <form id="transferForm" class="grid two">
+        <label>
+          To User ID
+          <input id="toUserId" type="number" min="1" required value="2" />
+        </label>
+        <label>
+          Amount
+          <input id="transferAmount" type="number" min="0.01" step="0.01" required value="10" />
+        </label>
+        <label>
+          Idempotency Key (opsiyonel)
+          <input id="idempotencyKey" type="text" placeholder="bos birakirsan otomatik UUID" />
+        </label>
+        <button type="submit">Transfer</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>5) Cuzdan Bilgisi</h2>
+      <div class="actions">
+        <button id="getWalletBtn" type="button">Get Wallet (Token User)</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>6) Transactions</h2>
+      <form id="transactionsForm" class="grid two">
+        <label>
+          Wallet ID
+          <input id="walletId" type="number" min="1" required value="1" />
+        </label>
+        <label>
+          Sort By
+          <select id="sortBy">
+            <option value="transactionDate">transactionDate</option>
+            <option value="amount">amount</option>
+            <option value="id">id</option>
+          </select>
+        </label>
+        <label>
+          Direction
+          <select id="direction">
+            <option value="DESC">DESC</option>
+            <option value="ASC">ASC</option>
+          </select>
+        </label>
+        <label>
+          Size
+          <input id="size" type="number" min="1" max="50" required value="10" />
+        </label>
+        <button type="submit">Get Transactions</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Response</h2>
+      <pre id="output">Hazir.</pre>
+    </section>
+  </main>
+
+  <script src="/demo/app.js"></script>
+</body>
+</html>
+

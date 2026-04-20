@@ -46,13 +46,12 @@ docker-compose up
 
 ## Authentication (JWT)
 
-### 1. Login (Token Al)
+### 1. Dev Demo Token Al
 ```bash
-curl -X POST http://localhost:8080/api/v1/auth/login \
+curl -X POST http://localhost:8080/api/v1/auth/demo-token \
   -H "Content-Type: application/json" \
   -d '{
-    "username": "alper",
-    "password": "123"
+    "userId": 1
   }'
 ```
 Response:
@@ -64,15 +63,26 @@ Response:
 
 ### 2. Token ile Istek Yap
 ```bash
-curl -X GET http://localhost:8080/api/v1/wallets/1 \
+curl -X GET http://localhost:8080/api/v1/wallets \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWI..."
 ```
+
+## Demo Frontend
+
+Tarayicidan mini demo ekranini ac:
+- `http://localhost:8080/demo/index.html`
+
+Demo sayfasinda:
+1. `Demo Token Uret` ile token al
+2. Cuzdan olustur, deposit/withdraw yap
+3. Transfer ve transaction listesi dene
+4. Tüm yanitlari tek ekranda gor
 
 ## API Endpoints
 
 ### Wallets
 - `POST /api/v1/wallets` - Cuzdan olustur
-- `GET /api/v1/wallets/{userId}` - Cuzdan getir
+- `GET /api/v1/wallets` - Token kullanicisinin cuzdani
 - `POST /api/v1/wallets/deposit` - Para yatir
 - `POST /api/v1/wallets/withdraw` - Para cek
 - `POST /api/v1/wallets/transfer` - Para transfer
@@ -81,7 +91,7 @@ curl -X GET http://localhost:8080/api/v1/wallets/1 \
 - `GET /api/v1/wallets/{walletId}/transactions` - Islem gecsemisi (paginated)
 
 ### Auth
-- `POST /api/v1/auth/login` - Login (JWT token al)
+- `POST /api/v1/auth/demo-token` - Dev ortaminda demo JWT token uret
 
 ## Testing
 ```bash
