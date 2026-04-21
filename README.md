@@ -1,34 +1,34 @@
 # Digital Wallet Application
 
-Production-ready Spring Boot dijital cuzdan API'si. Clean Architecture + JWT + Flyway Migrations.
+Production-ready Spring Boot digital wallet API built with Clean Architecture, JWT, and Flyway.
 
-## Ozellikler
-- ✅ Cuzdan olusturma / Para yatirma / Para cekme / Transfer
-- ✅ JWT Authentication
-- ✅ Rate Limiting (10 req/min per user)
-- ✅ Structured JSON Logging + Correlation IDs
-- ✅ Flyway Database Migrations
-- ✅ Docker + Docker Compose (PostgreSQL)
-- ✅ CI/CD Pipeline (GitHub Actions)
-- ✅ Comprehensive Test Suite (16 unit/integration tests)
-- ✅ Global Exception Handling
-- ✅ Swagger/OpenAPI Documentation
-- ✅ Actuator Monitoring
+## Features
+- Wallet creation / deposit / withdraw / transfer
+- JWT authentication
+- Rate limiting (10 req/min per user)
+- Structured JSON logging + correlation IDs
+- Flyway database migrations
+- Docker + Docker Compose (PostgreSQL)
+- CI/CD pipeline (GitHub Actions)
+- Comprehensive test suite (unit/integration)
+- Global exception handling
+- Swagger/OpenAPI documentation
+- Actuator monitoring
 
-## Teknolojiler
+## Tech Stack
 - Java 17+
 - Spring Boot 4.x
 - Spring Web
 - Spring Data JPA
 - Spring Security (JWT)
 - PostgreSQL (prod) / H2 (dev/test)
-- Flyway Database Migration
+- Flyway
 - Docker
 - Maven
 
 ## Quick Start
 
-### Local H2 ile:
+### Local (H2)
 ```bash
 cd /Users/alper/Desktop/java_project/digital-wallet
 cp .env.example .env
@@ -39,16 +39,16 @@ cp .env.example .env
 - OpenAPI JSON: http://localhost:8080/v3/api-docs
 - Health: http://localhost:8080/actuator/health
 
-### Docker altyapisi (PostgreSQL + Redis):
+### Docker infrastructure (PostgreSQL + Redis)
 ```bash
 docker-compose up
 ```
-- PostgreSQL: localhost:5432 (username: postgres, password: postgres)
+- PostgreSQL: localhost:5432 (username: `postgres`, password: `postgres`)
 - Redis: localhost:6379
 
 ## Authentication (JWT)
 
-### 1. Dev Demo Token Al
+### 1) Get a dev demo token
 ```bash
 curl -X POST http://localhost:8080/api/v1/auth/demo-token \
   -H "Content-Type: application/json" \
@@ -56,6 +56,7 @@ curl -X POST http://localhost:8080/api/v1/auth/demo-token \
     "userId": 1
   }'
 ```
+
 Response:
 ```json
 {
@@ -63,7 +64,7 @@ Response:
 }
 ```
 
-### 2. Token ile Istek Yap
+### 2) Call a protected endpoint
 ```bash
 curl -X GET http://localhost:8080/api/v1/wallets \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWI..."
@@ -71,73 +72,72 @@ curl -X GET http://localhost:8080/api/v1/wallets \
 
 ## Demo Frontend
 
-Tarayicidan mini demo ekranini ac:
+Open in your browser:
 - `http://localhost:8080/demo/index.html`
-- `http://localhost:8080/` (ana landing sayfasi)
+- `http://localhost:8080/` (landing page)
 
-Demo sayfasinda:
-1. `Demo Token Uret` ile token al
-2. Cuzdan olustur, deposit/withdraw yap
-3. Transfer ve transaction listesi dene
-4. Tüm yanitlari tek ekranda gor
+On the demo page:
+1. Generate a demo token
+2. Create a wallet, then deposit/withdraw
+3. Transfer money and list transactions
+4. Inspect all responses on a single screen
 
 ## API Endpoints
 
 ### Wallets
-- `POST /api/v1/wallets` - Cuzdan olustur
-- `GET /api/v1/wallets` - Token kullanicisinin cuzdani
-- `POST /api/v1/wallets/deposit` - Para yatir
-- `POST /api/v1/wallets/withdraw` - Para cek
-- `POST /api/v1/wallets/transfer` - Para transfer
+- `POST /api/v1/wallets` - Create wallet
+- `GET /api/v1/wallets` - Get authenticated user's wallet
+- `POST /api/v1/wallets/deposit` - Deposit money
+- `POST /api/v1/wallets/withdraw` - Withdraw money
+- `POST /api/v1/wallets/transfer` - Transfer money
 
 ### Transactions
-- `GET /api/v1/wallets/{walletId}/transactions` - Islem gecsemisi (paginated)
+- `GET /api/v1/wallets/{walletId}/transactions` - Transaction history (paginated)
 
 ### Auth
-- `POST /api/v1/auth/demo-token` - Dev ortaminda demo JWT token uret
+- `POST /api/v1/auth/demo-token` - Generate demo JWT token (dev only)
 
 ## Testing
 ```bash
 ./mvnw test
-# 16 tests passed
 ```
 
 ## Monitoring
-- Health Check: `GET /actuator/health`
+- Health: `GET /actuator/health`
 - Metrics: `GET /actuator/metrics`
-- Logs: JSON format (ELK/Kibana uyumlu)
+- Logs: JSON format (ELK/Kibana friendly)
 
 ## Database
 
 ### Flyway Migrations
-Migrations otomatik olarak app startup'inda calisir:
+Migrations run automatically on startup:
 ```
 src/main/resources/db/migration/V1__Initial_Schema.sql
 ```
 
 ### Schema
-- `wallets` - User cuzdan bilgileri
-- `transactions` - Islem gecmisi  
-- `users` - Kullanici bilgileri
+- `wallets` - user wallet data
+- `transactions` - transaction history
+- `users` - user data
 
 ## Architecture
 
-Clean Architecture (Layered):
+Layered Clean Architecture:
 ```
 domain/
-  ├─ model/         (Entity'ler)
-  ├─ repository/    (Port'lar)
+  ├─ model/         (Entities)
+  ├─ repository/    (Ports)
   └─ exception/     (Custom exceptions)
-  
+
 application/
   ├─ usecase/       (Business logic)
   └─ dto/           (Request/Response models)
-  
+
 infrastructure/
   ├─ persistence/   (Repository implementations)
   ├─ rest/          (Controllers, exception handlers)
   ├─ config/        (Spring configurations)
-  └─ security/      (JWT, Security config)
+  └─ security/      (JWT, security config)
 ```
 
 ## Rate Limiting
@@ -145,30 +145,30 @@ infrastructure/
 - **Login/Auth:** 5 requests/minute
 - **Transfer:** 3 requests/minute
 
-Bucket4j + Redis ile dagitic ortamda calisir.
+Implemented with Bucket4j + Redis for distributed environments.
 
-Response header `Retry-After` ile bilgi verilir.
+`Retry-After` response header is returned when throttled.
 
 ## Error Handling
-Standardized error responses:
+Standardized error response:
 ```json
 {
   "status": 400,
   "code": "WALLET_NOT_FOUND",
-  "message": "Cuzdan bulunamadi!",
+  "message": "Wallet not found",
   "timestamp": "2026-04-20T14:30:45.123Z"
 }
 ```
 
 ## CI/CD
 
-GitHub Actions ile otomatik test ve Docker build:
-- Her push'da: Unit tests calisir
-- Main branch'e push: Docker image build edilir
+GitHub Actions pipeline:
+- Run unit tests on every push
+- Build Docker image on `main` branch pushes
 
 ## Environment Variables
 
-### Development (.env.dev)
+### Development
 ```
 SPRING_PROFILES_ACTIVE=dev
 FLYWAY_ENABLED=true
@@ -179,7 +179,7 @@ REDIS_HOST=localhost
 REDIS_PORT=6379
 ```
 
-### Production (.env.prod)
+### Production
 ```
 SPRING_PROFILES_ACTIVE=prod
 FLYWAY_ENABLED=true
@@ -193,26 +193,26 @@ REDIS_HOST=prod-redis
 REDIS_PORT=6379
 ```
 
-## Contributing
-1. Fork the repo
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-MIT
-
 ## Swagger / OpenAPI
 
 Swagger UI:
 - `http://localhost:8080/swagger-ui.html`
 
-Raw OpenAPI dokumani:
+Raw OpenAPI document:
 - `http://localhost:8080/v3/api-docs`
 
-JWT ile test etmek icin:
-1. `POST /api/v1/auth/demo-token` ile token al
-2. Swagger UI'da `Authorize` butonuna tikla
-3. `Bearer <token>` formatinda token gir
-4. Korumali wallet endpointlerini UI uzerinden cagir
+To test protected endpoints in Swagger UI:
+1. Call `POST /api/v1/auth/demo-token` to get a token
+2. Click **Authorize**
+3. Enter token as `Bearer <token>`
+4. Call protected wallet endpoints
+
+## Contributing
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to your branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+MIT
