@@ -20,6 +20,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +47,7 @@ import java.util.Set;
 @RequestMapping("/api/v1/wallets")
 @RequiredArgsConstructor
 @Tag(name = "Wallet Management", description = "Cuzdan yonetimi ve para transfer islemi")
+@SecurityRequirement(name = "bearerAuth")
 public class WalletController {
 
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("transactionDate", "amount", "id");
@@ -204,4 +206,3 @@ public class WalletController {
         }
     }
 }
-

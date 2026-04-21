@@ -17,7 +17,7 @@ Production-ready Spring Boot dijital cuzdan API'si. Clean Architecture + JWT + F
 
 ## Teknolojiler
 - Java 17+
-- Spring Boot 3.x
+- Spring Boot 4.x
 - Spring Web
 - Spring Data JPA
 - Spring Security (JWT)
@@ -36,6 +36,7 @@ cp .env.example .env
 ```
 - App: http://localhost:8080
 - Swagger: http://localhost:8080/swagger-ui.html
+- OpenAPI JSON: http://localhost:8080/v3/api-docs
 - Health: http://localhost:8080/actuator/health
 
 ### Docker altyapisi (PostgreSQL + Redis):
@@ -144,7 +145,7 @@ infrastructure/
 - **Login/Auth:** 5 requests/minute
 - **Transfer:** 3 requests/minute
 
-Bucket4j + Redis ile dagitik ortamda calisir.
+Bucket4j + Redis ile dagitic ortamda calisir.
 
 Response header `Retry-After` ile bilgi verilir.
 
@@ -201,3 +202,17 @@ REDIS_PORT=6379
 
 ## License
 MIT
+
+## Swagger / OpenAPI
+
+Swagger UI:
+- `http://localhost:8080/swagger-ui.html`
+
+Raw OpenAPI dokumani:
+- `http://localhost:8080/v3/api-docs`
+
+JWT ile test etmek icin:
+1. `POST /api/v1/auth/demo-token` ile token al
+2. Swagger UI'da `Authorize` butonuna tikla
+3. `Bearer <token>` formatinda token gir
+4. Korumali wallet endpointlerini UI uzerinden cagir
