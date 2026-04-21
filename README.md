@@ -1,5 +1,11 @@
 # Digital Wallet Application
 
+## Overview
+
+A backend system that simulates a real-world digital wallet platform where users can securely manage balances, perform transactions, and transfer money using a scalable and secure REST API.
+
+Built to demonstrate production-level backend engineering practices including authentication, rate limiting, caching, CI/CD, and clean architecture principles.
+
 Production-ready Spring Boot digital wallet API built with Clean Architecture, JWT, and Flyway.
 
 ## Features
