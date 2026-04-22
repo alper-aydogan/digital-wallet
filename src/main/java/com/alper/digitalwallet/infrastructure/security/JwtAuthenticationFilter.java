@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -19,7 +20,33 @@ import java.util.ArrayList;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    private static final String[] PUBLIC_PATHS = {
+            "/api/v1/auth/**",
+            "/swagger-ui.html",
+            "/swagger-ui/**",
+            "/v3/api-docs/**",
+            "/actuator/health",
+            "/h2-console/**",
+            "/demo",
+            "/demo/**",
+            "/",
+            "/index.html"
+    };
+
+    private final AntPathMatcher pathMatcher = new AntPathMatcher();
+
     private final JwtProvider jwtProvider;
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getServletPath();
+        for (String publicPath : PUBLIC_PATHS) {
+            if (pathMatcher.match(publicPath, path)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -51,4 +78,3 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return null;
     }
 }
-
