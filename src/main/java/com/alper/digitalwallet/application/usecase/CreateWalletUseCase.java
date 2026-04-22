@@ -5,6 +5,7 @@ import com.alper.digitalwallet.domain.model.Wallet;
 import com.alper.digitalwallet.domain.repository.WalletRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 
@@ -14,6 +15,7 @@ public class CreateWalletUseCase {
 
     private final WalletRepository walletRepository;
 
+    @Transactional
     public Wallet execute(Long userId, String currency) {
         // Duplicate kontrolü: aynı userId için cüzdan varsa hata fırlat
         if (walletRepository.findByUserId(userId).isPresent()) {

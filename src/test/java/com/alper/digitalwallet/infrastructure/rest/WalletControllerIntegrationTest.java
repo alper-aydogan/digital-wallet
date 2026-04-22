@@ -2,6 +2,7 @@ package com.alper.digitalwallet.infrastructure.rest;
 
 import com.alper.digitalwallet.application.usecase.CreateWalletUseCase;
 import com.alper.digitalwallet.application.usecase.DepositMoneyUseCase;
+import com.alper.digitalwallet.domain.exception.WalletAlreadyExistsException;
 import com.alper.digitalwallet.domain.model.Wallet;
 import com.alper.digitalwallet.domain.repository.WalletRepository;
 import org.junit.jupiter.api.Test;
@@ -54,10 +55,8 @@ class WalletIntegrationTest {
         Wallet wallet1 = createWalletUseCase.execute(101L, "TRY");
         assertNotNull(wallet1.getId());
 
-        // Ayni kullanici icin ikinci cuzdan olusturmaya calis
-        // Bu database constraint ihlali nedeniyle fail olmali
-        // Veritabanındaki unique constraint tarafından yakalanıyor
-        // org.springframework.dao.DataIntegrityViolationException fırlatılabilir
+        // Ayni kullanici icin ikinci cuzdan olusturma domain seviyesinde engellenmeli
+        assertThrows(WalletAlreadyExistsException.class, () -> createWalletUseCase.execute(101L, "TRY"));
     }
 
     @Test
