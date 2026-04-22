@@ -6,24 +6,25 @@ import com.alper.digitalwallet.domain.exception.WalletAlreadyExistsException;
 import com.alper.digitalwallet.domain.model.Wallet;
 import com.alper.digitalwallet.domain.repository.WalletRepository;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestConstructor;
+
+import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
+@TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
+@RequiredArgsConstructor
 class WalletIntegrationTest {
 
-    @Autowired
-    private CreateWalletUseCase createWalletUseCase;
+    private final CreateWalletUseCase createWalletUseCase;
 
-    @Autowired
-    private DepositMoneyUseCase depositMoneyUseCase;
+    private final DepositMoneyUseCase depositMoneyUseCase;
 
-    @Autowired
-    private WalletRepository walletRepository;
+    private final WalletRepository walletRepository;
 
     @Test
     void testFullWorkflow_CreateAndDeposit() {
