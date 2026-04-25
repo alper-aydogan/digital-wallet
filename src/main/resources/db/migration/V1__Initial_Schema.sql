@@ -13,7 +13,7 @@ CREATE TABLE wallets (
 CREATE TABLE transactions (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     from_wallet_id BIGINT,
-    to_wallet_id BIGINT NOT NULL,
+    to_wallet_id BIGINT,
     amount DECIMAL(19,2) NOT NULL,
     transaction_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     description VARCHAR(255),
@@ -50,4 +50,3 @@ CREATE INDEX idx_transactions_from_wallet ON transactions(from_wallet_id);
 CREATE INDEX idx_transactions_to_wallet ON transactions(to_wallet_id);
 CREATE INDEX idx_transactions_idempotency_key ON transactions(idempotency_key);
 CREATE INDEX idx_users_username ON users(username);
-
