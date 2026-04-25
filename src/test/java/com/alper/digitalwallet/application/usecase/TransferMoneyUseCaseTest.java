@@ -1,5 +1,4 @@
 package com.alper.digitalwallet.application.usecase;
-
 import com.alper.digitalwallet.domain.exception.InsufficientBalanceException;
 import com.alper.digitalwallet.domain.exception.InvalidAmountException;
 import com.alper.digitalwallet.domain.exception.InvalidCurrencyException;
@@ -13,10 +12,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
 import java.math.BigDecimal;
 import java.util.Optional;
-
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -51,8 +48,8 @@ class TransferMoneyUseCaseTest {
                 .currency("TRY")
                 .build();
 
-        when(walletRepository.findByUserId(1L)).thenReturn(Optional.of(fromWallet));
-        when(walletRepository.findByUserId(2L)).thenReturn(Optional.of(toWallet));
+        when(walletRepository.findByUserIdWithLock(1L)).thenReturn(Optional.of(fromWallet));
+        when(walletRepository.findByUserIdWithLock(2L)).thenReturn(Optional.of(toWallet));
         when(walletRepository.save(any(Wallet.class))).thenAnswer(i -> i.getArgument(0));
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -98,8 +95,8 @@ class TransferMoneyUseCaseTest {
                 .currency("TRY")
                 .build();
 
-        when(walletRepository.findByUserId(1L)).thenReturn(Optional.of(fromWallet));
-        when(walletRepository.findByUserId(2L)).thenReturn(Optional.of(toWallet));
+        when(walletRepository.findByUserIdWithLock(1L)).thenReturn(Optional.of(fromWallet));
+        when(walletRepository.findByUserIdWithLock(2L)).thenReturn(Optional.of(toWallet));
 
         assertThrows(InsufficientBalanceException.class, () ->
                 transferMoneyUseCase.execute(1L, 2L, new BigDecimal("50.00"))
@@ -122,8 +119,8 @@ class TransferMoneyUseCaseTest {
                 .currency("USD")
                 .build();
 
-        when(walletRepository.findByUserId(1L)).thenReturn(Optional.of(fromWallet));
-        when(walletRepository.findByUserId(2L)).thenReturn(Optional.of(toWallet));
+        when(walletRepository.findByUserIdWithLock(1L)).thenReturn(Optional.of(fromWallet));
+        when(walletRepository.findByUserIdWithLock(2L)).thenReturn(Optional.of(toWallet));
 
         assertThrows(InvalidCurrencyException.class, () ->
                 transferMoneyUseCase.execute(1L, 2L, new BigDecimal("50.00"))
@@ -132,7 +129,7 @@ class TransferMoneyUseCaseTest {
 
     @Test
     void execute_fromWalletNotFound() {
-        when(walletRepository.findByUserId(999L)).thenReturn(Optional.empty());
+        when(walletRepository.findByUserIdWithLock(999L)).thenReturn(Optional.empty());
 
         assertThrows(WalletNotFoundException.class, () ->
                 transferMoneyUseCase.execute(999L, 2L, new BigDecimal("50.00"))
@@ -148,8 +145,8 @@ class TransferMoneyUseCaseTest {
                 .currency("TRY")
                 .build();
 
-        when(walletRepository.findByUserId(1L)).thenReturn(Optional.of(fromWallet));
-        when(walletRepository.findByUserId(999L)).thenReturn(Optional.empty());
+        when(walletRepository.findByUserIdWithLock(1L)).thenReturn(Optional.of(fromWallet));
+        when(walletRepository.findByUserIdWithLock(999L)).thenReturn(Optional.empty());
 
         assertThrows(WalletNotFoundException.class, () ->
                 transferMoneyUseCase.execute(1L, 999L, new BigDecimal("50.00"))
