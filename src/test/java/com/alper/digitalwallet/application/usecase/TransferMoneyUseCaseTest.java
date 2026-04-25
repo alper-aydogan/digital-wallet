@@ -19,6 +19,8 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -67,6 +69,17 @@ class TransferMoneyUseCaseTest {
         assertThrows(InvalidAmountException.class, () ->
                 transferMoneyUseCase.execute(1L, 1L, new BigDecimal("50.00"))
         );
+    }
+
+    @Test
+    void execute_nullAmount() {
+        assertThrows(InvalidAmountException.class, () ->
+                transferMoneyUseCase.execute(1L, 2L, null)
+        );
+
+        verify(walletRepository, never()).findByUserId(any());
+        verify(walletRepository, never()).save(any(Wallet.class));
+        verify(transactionRepository, never()).save(any(Transaction.class));
     }
 
     @Test
@@ -160,4 +173,3 @@ class TransferMoneyUseCaseTest {
         assertEquals(cachedTransaction, result);
     }
 }
-

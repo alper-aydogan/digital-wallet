@@ -1,5 +1,6 @@
 package com.alper.digitalwallet.application.usecase;
 
+import com.alper.digitalwallet.domain.exception.InvalidCurrencyException;
 import com.alper.digitalwallet.domain.exception.WalletAlreadyExistsException;
 import com.alper.digitalwallet.domain.model.Wallet;
 import com.alper.digitalwallet.domain.repository.WalletRepository;
@@ -17,6 +18,10 @@ public class CreateWalletUseCase {
 
     @Transactional
     public Wallet execute(Long userId, String currency) {
+        if (currency == null || currency.isBlank()) {
+            throw new InvalidCurrencyException("Para birimi gecersiz olamaz!");
+        }
+
         // Duplicate kontrolü: aynı userId için cüzdan varsa hata fırlat
         if (walletRepository.findByUserId(userId).isPresent()) {
             throw new WalletAlreadyExistsException("Bu kullanici icin zaten bir cuzdan var!");
@@ -31,4 +36,3 @@ public class CreateWalletUseCase {
         return walletRepository.save(wallet);
     }
 }
-

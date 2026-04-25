@@ -77,6 +77,17 @@ class DepositMoneyUseCaseTest {
     }
 
     @Test
+    void execute_nullAmount() {
+        assertThrows(InvalidAmountException.class, () ->
+                depositMoneyUseCase.execute(1L, null)
+        );
+
+        verify(walletRepository, never()).findByUserId(any());
+        verify(walletRepository, never()).save(any(Wallet.class));
+        verify(transactionRepository, never()).save(any());
+    }
+
+    @Test
     void execute_walletNotFound() {
         when(walletRepository.findByUserId(999L)).thenReturn(Optional.empty());
 
@@ -89,4 +100,3 @@ class DepositMoneyUseCaseTest {
         verify(transactionRepository, never()).save(any());
     }
 }
-

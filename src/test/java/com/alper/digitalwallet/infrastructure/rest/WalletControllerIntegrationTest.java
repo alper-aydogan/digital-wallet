@@ -117,5 +117,6 @@ class WalletIntegrationTest {
         // Version field'ı güncellenmiş olmalı
         assertNotNull(version1);
         assertNotNull(version2);
+        assertTrue(version2 > version1);
     }
 }

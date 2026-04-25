@@ -1,5 +1,6 @@
 package com.alper.digitalwallet.application.usecase;
 
+import com.alper.digitalwallet.domain.exception.InvalidCurrencyException;
 import com.alper.digitalwallet.domain.exception.WalletAlreadyExistsException;
 import com.alper.digitalwallet.domain.model.Wallet;
 import com.alper.digitalwallet.domain.repository.WalletRepository;
@@ -59,5 +60,20 @@ class CreateWalletUseCaseTest {
         verify(walletRepository).findByUserId(10L);
         verify(walletRepository, never()).save(any(Wallet.class));
     }
-}
 
+    @Test
+    void execute_currencyNull() {
+        assertThrows(InvalidCurrencyException.class, () -> createWalletUseCase.execute(10L, null));
+
+        verify(walletRepository, never()).findByUserId(10L);
+        verify(walletRepository, never()).save(any(Wallet.class));
+    }
+
+    @Test
+    void execute_currencyBlank() {
+        assertThrows(InvalidCurrencyException.class, () -> createWalletUseCase.execute(10L, "   "));
+
+        verify(walletRepository, never()).findByUserId(10L);
+        verify(walletRepository, never()).save(any(Wallet.class));
+    }
+}
