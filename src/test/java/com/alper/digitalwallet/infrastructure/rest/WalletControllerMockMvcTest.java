@@ -8,6 +8,8 @@ import com.alper.digitalwallet.application.usecase.TransferMoneyUseCase;
 import com.alper.digitalwallet.application.usecase.WithdrawMoneyUseCase;
 import com.alper.digitalwallet.domain.model.Transaction;
 import com.alper.digitalwallet.domain.model.Wallet;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.when;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -75,6 +77,30 @@ class WalletControllerMockMvcTest {
         mockMvc = MockMvcBuilders.standaloneSetup(walletController)
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
+    }
+
+    @Test
+    void createWalletReturnsForbiddenWhenBodyUserDiffersFromTokenUser() throws Exception {
+        mockMvc.perform(post("/api/v1/wallets")
+                        .with(authenticatedUser(1L))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"userId\":2,\"currency\":\"TRY\"}"))
+                .andExpect(status().isForbidden());
+
+        verify(createWalletUseCase, never()).execute(anyLong(), any());
+    }
+
+    @Test
+    void createWalletReturnsCreatedWhenUserMatches() throws Exception {
+        when(createWalletUseCase.execute(1L, "TRY")).thenReturn(Wallet.builder().id(1L).userId(1L).currency("TRY").build());
+
+        mockMvc.perform(post("/api/v1/wallets")
+                        .with(authenticatedUser(1L))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"userId\":1,\"currency\":\"TRY\"}"))
+                .andExpect(status().isCreated());
+
+        verify(createWalletUseCase).execute(1L, "TRY");
     }
 
     @Test

@@ -63,9 +63,12 @@ public class WalletController {
     @Operation(summary = "Yeni cuzdan olustur", description = "Kullanici icin yeni bir dijital cuzdan olusturur")
     @ApiResponses({
         @ApiResponse(responseCode = "201", description = "Cuzdan basariyla olusturuldu"),
-        @ApiResponse(responseCode = "400", description = "Gecersiz istek")
+        @ApiResponse(responseCode = "400", description = "Gecersiz istek"),
+        @ApiResponse(responseCode = "403", description = "Erisim reddedildi")
     })
-    public ResponseEntity<WalletResponse> createWallet(@Valid @RequestBody CreateWalletRequest request) {
+    public ResponseEntity<WalletResponse> createWallet(@Valid @RequestBody CreateWalletRequest request, Authentication authentication) {
+        Long authenticatedUserId = getAuthenticatedUserId(authentication);
+        assertUserAccess(authenticatedUserId, request.getUserId());
         Wallet wallet = createWalletUseCase.execute(request.getUserId(), request.getCurrency());
         return new ResponseEntity<>(mapToResponse(wallet), HttpStatus.CREATED);
     }

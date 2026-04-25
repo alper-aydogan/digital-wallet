@@ -59,6 +59,8 @@ class TransferMoneyUseCaseTest {
         assertEquals(1L, result.getFromWalletId());
         assertEquals(2L, result.getToWalletId());
         assertEquals(new BigDecimal("30.00"), result.getAmount());
+        assertEquals(new BigDecimal("70.00"), fromWallet.getBalance());
+        assertEquals(new BigDecimal("80.00"), toWallet.getBalance());
     }
 
     @Test
