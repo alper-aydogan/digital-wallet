@@ -36,6 +36,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -210,6 +211,27 @@ class WalletControllerMockMvcTest {
                         .param("sortBy", "nonExistingField")
                         .param("direction", "ASC"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void unexpectedRuntimeExceptionReturnsInternalServerError() throws Exception {
+        // Simulate an unexpected RuntimeException from use case
+        when(getWalletUseCase.executeById(10L)).thenThrow(new RuntimeException("Database connection lost"));
+
+        mockMvc.perform(get("/api/v1/wallets/10")
+                        .with(authenticatedUser(1L)))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void domainExceptionReturnsCorrectStatus() throws Exception {
+        // WalletNotFoundException should return 404 (domain exception mapping)
+        when(getWalletUseCase.executeById(99L)).thenThrow(
+                new com.alper.digitalwallet.domain.exception.WalletNotFoundException("Wallet not found"));
+
+        mockMvc.perform(get("/api/v1/wallets/99")
+                        .with(authenticatedUser(1L)))
+                .andExpect(status().isNotFound());
     }
 
     private RequestPostProcessor authenticatedUser(Long userId) {
