@@ -35,10 +35,20 @@ Production-ready Spring Boot digital wallet API built with Clean Architecture, J
 ## Quick Start
 
 ### Local (H2)
+**Profile must be set explicitly for safety (no default dev profile):**
+
 ```bash
 cd /Users/alper/Desktop/java_project/digital-wallet
 cp .env.example .env
+
+# Option 1: Environment variable
+SPRING_PROFILES_ACTIVE=dev ./mvnw spring-boot:run
+
+# Option 2: Maven property
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+
+# Option 3: JVM argument
+./mvnw spring-boot:run -Dspring.profiles.active=dev
 ```
 - App: http://localhost:8080
 - Swagger: http://localhost:8080/swagger-ui.html
