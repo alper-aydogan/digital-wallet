@@ -1,7 +1,5 @@
 package com.alper.digitalwallet.application.usecase;
 
-import com.alper.digitalwallet.domain.exception.InsufficientBalanceException;
-import com.alper.digitalwallet.domain.exception.InvalidAmountException;
 import com.alper.digitalwallet.domain.exception.WalletNotFoundException;
 import com.alper.digitalwallet.domain.model.Transaction;
 import com.alper.digitalwallet.domain.model.Wallet;
@@ -23,18 +21,10 @@ public class WithdrawMoneyUseCase {
 
     @Transactional
     public Wallet execute(Long userId, BigDecimal amount) {
-        if (amount == null || amount.signum() <= 0) {
-            throw new InvalidAmountException("Cekilecek tutar sifirdan buyuk olmalidir!");
-        }
-
         Wallet wallet = walletRepository.findByUserId(userId)
                 .orElseThrow(() -> new WalletNotFoundException("Kullaniciya ait cuzdan bulunamadi!"));
 
-        if (wallet.getBalance().compareTo(amount) < 0) {
-            throw new InsufficientBalanceException("Yetersiz bakiye! Mevcut bakiye: " + wallet.getBalance());
-        }
-
-        wallet.setBalance(wallet.getBalance().subtract(amount));
+        wallet.debit(amount);
         Wallet updatedWallet = walletRepository.save(wallet);
 
         Transaction transaction = Transaction.builder()

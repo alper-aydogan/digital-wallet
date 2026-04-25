@@ -75,20 +75,58 @@ class WithdrawMoneyUseCaseTest {
 
     @Test
     void execute_invalidAmount() {
+        Wallet wallet = Wallet.builder()
+                .id(1L)
+                .userId(1L)
+                .balance(new BigDecimal("100.00"))
+                .currency("TRY")
+                .build();
+
+        when(walletRepository.findByUserId(1L)).thenReturn(Optional.of(wallet));
+
         assertThrows(InvalidAmountException.class, () ->
                 withdrawMoneyUseCase.execute(1L, new BigDecimal("-10.00"))
         );
-        verify(walletRepository, never()).findByUserId(any());
+        verify(walletRepository).findByUserId(1L);
         verify(walletRepository, never()).save(any(Wallet.class));
         verify(transactionRepository, never()).save(any());
     }
 
     @Test
     void execute_zeroAmount() {
+        Wallet wallet = Wallet.builder()
+                .id(1L)
+                .userId(1L)
+                .balance(new BigDecimal("100.00"))
+                .currency("TRY")
+                .build();
+
+        when(walletRepository.findByUserId(1L)).thenReturn(Optional.of(wallet));
+
         assertThrows(InvalidAmountException.class, () ->
                 withdrawMoneyUseCase.execute(1L, BigDecimal.ZERO)
         );
-        verify(walletRepository, never()).findByUserId(any());
+        verify(walletRepository).findByUserId(1L);
+        verify(walletRepository, never()).save(any(Wallet.class));
+        verify(transactionRepository, never()).save(any());
+    }
+
+    @Test
+    void execute_nullAmount() {
+        Wallet wallet = Wallet.builder()
+                .id(1L)
+                .userId(1L)
+                .balance(new BigDecimal("100.00"))
+                .currency("TRY")
+                .build();
+
+        when(walletRepository.findByUserId(1L)).thenReturn(Optional.of(wallet));
+
+        assertThrows(InvalidAmountException.class, () ->
+                withdrawMoneyUseCase.execute(1L, null)
+        );
+
+        verify(walletRepository).findByUserId(1L);
         verify(walletRepository, never()).save(any(Wallet.class));
         verify(transactionRepository, never()).save(any());
     }
