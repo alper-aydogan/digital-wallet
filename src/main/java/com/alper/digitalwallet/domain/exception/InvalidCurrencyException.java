@@ -5,4 +5,3 @@ public class InvalidCurrencyException extends WalletException {
         super(message);
     }
 }
-

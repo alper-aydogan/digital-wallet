@@ -5,4 +5,3 @@ public class InvalidAmountException extends WalletException {
         super(message);
     }
 }
-

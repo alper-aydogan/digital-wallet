@@ -5,4 +5,3 @@ public class WalletAlreadyExistsException extends WalletException {
         super(message);
     }
 }
-

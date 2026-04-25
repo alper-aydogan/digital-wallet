@@ -2,11 +2,13 @@ package com.alper.digitalwallet.infrastructure.rest;
 
 import com.alper.digitalwallet.application.usecase.CreateWalletUseCase;
 import com.alper.digitalwallet.application.usecase.DepositMoneyUseCase;
+import com.alper.digitalwallet.application.usecase.WithdrawMoneyUseCase;
 import com.alper.digitalwallet.domain.exception.WalletAlreadyExistsException;
 import com.alper.digitalwallet.domain.model.Wallet;
 import com.alper.digitalwallet.domain.repository.WalletRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.test.context.TestConstructor;
 
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ import java.math.BigDecimal;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
+@Transactional
 @TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
 @RequiredArgsConstructor
 class WalletIntegrationTest {
@@ -23,6 +26,8 @@ class WalletIntegrationTest {
     private final CreateWalletUseCase createWalletUseCase;
 
     private final DepositMoneyUseCase depositMoneyUseCase;
+
+    private final WithdrawMoneyUseCase withdrawMoneyUseCase;
 
     private final WalletRepository walletRepository;
 
@@ -63,11 +68,20 @@ class WalletIntegrationTest {
     @Test
     void testWithdrawal_SufficientBalance() {
         // Cuzdan olustur
-        Wallet wallet = createWalletUseCase.execute(102L, "TRY");
-        
+        createWalletUseCase.execute(102L, "TRY");
+
         // Para yatir
-        wallet = depositMoneyUseCase.execute(102L, new BigDecimal("500.00"));
+        Wallet wallet = depositMoneyUseCase.execute(102L, new BigDecimal("500.00"));
         assertEquals(new BigDecimal("500.00"), wallet.getBalance());
+
+        // Para cek
+        wallet = withdrawMoneyUseCase.execute(102L, new BigDecimal("200.00"));
+        assertEquals(new BigDecimal("300.00"), wallet.getBalance());
+
+        // Veritabanindan kontrol
+        Wallet savedWallet = walletRepository.findByUserId(102L).orElse(null);
+        assertNotNull(savedWallet);
+        assertEquals(new BigDecimal("300.00"), savedWallet.getBalance());
     }
 
     @Test
@@ -77,7 +91,7 @@ class WalletIntegrationTest {
         Long walletId = wallet.getId();
 
         // Para yatır
-        wallet = depositMoneyUseCase.execute(103L, new BigDecimal("100.00"));
+        depositMoneyUseCase.execute(103L, new BigDecimal("100.00"));
 
         // Veritabanından bularak persist olup olmadığını kontrol et
         Wallet retrievedWallet = walletRepository.findById(walletId).orElse(null);
@@ -105,4 +119,3 @@ class WalletIntegrationTest {
         assertNotNull(version2);
     }
 }
-
