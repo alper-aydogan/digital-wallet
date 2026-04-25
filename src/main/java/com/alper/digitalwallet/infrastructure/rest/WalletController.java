@@ -99,12 +99,17 @@ public class WalletController {
     @Operation(summary = "Para yatir", description = "Cuzdana para yatirir")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Para basariyla yatirildi"),
-        @ApiResponse(responseCode = "404", description = "Cuzdan bulunamadi")
+        @ApiResponse(responseCode = "404", description = "Cuzdan bulunamadi"),
+        @ApiResponse(responseCode = "409", description = "Idempotency conflict")
     })
-    public ResponseEntity<WalletResponse> deposit(@Valid @RequestBody DepositRequest request, Authentication authentication) {
+    public ResponseEntity<WalletResponse> deposit(
+            @Valid @RequestBody DepositRequest request,
+            Authentication authentication,
+            @RequestHeader(value = "Idempotency-Key", required = false)
+            @Parameter(description = "Para yatirma icin idempotency anahtari") String idempotencyKey) {
         Long authenticatedUserId = getAuthenticatedUserId(authentication);
         assertUserAccess(authenticatedUserId, request.getUserId());
-        Wallet wallet = depositMoneyUseCase.execute(authenticatedUserId, request.getAmount());
+        Wallet wallet = depositMoneyUseCase.execute(authenticatedUserId, request.getAmount(), idempotencyKey);
         return ResponseEntity.ok(mapToResponse(wallet));
     }
 
@@ -113,12 +118,17 @@ public class WalletController {
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Para basariyla cekildi"),
         @ApiResponse(responseCode = "400", description = "Yetersiz bakiye"),
-        @ApiResponse(responseCode = "404", description = "Cuzdan bulunamadi")
+        @ApiResponse(responseCode = "404", description = "Cuzdan bulunamadi"),
+        @ApiResponse(responseCode = "409", description = "Idempotency conflict")
     })
-    public ResponseEntity<WalletResponse> withdraw(@Valid @RequestBody WithdrawRequest request, Authentication authentication) {
+    public ResponseEntity<WalletResponse> withdraw(
+            @Valid @RequestBody WithdrawRequest request,
+            Authentication authentication,
+            @RequestHeader(value = "Idempotency-Key", required = false)
+            @Parameter(description = "Para cekme icin idempotency anahtari") String idempotencyKey) {
         Long authenticatedUserId = getAuthenticatedUserId(authentication);
         assertUserAccess(authenticatedUserId, request.getUserId());
-        Wallet wallet = withdrawMoneyUseCase.execute(authenticatedUserId, request.getAmount());
+        Wallet wallet = withdrawMoneyUseCase.execute(authenticatedUserId, request.getAmount(), idempotencyKey);
         return ResponseEntity.ok(mapToResponse(wallet));
     }
 

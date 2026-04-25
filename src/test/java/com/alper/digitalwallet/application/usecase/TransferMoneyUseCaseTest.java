@@ -11,23 +11,19 @@ import com.alper.digitalwallet.domain.model.Wallet;
 import com.alper.digitalwallet.domain.repository.IdempotencyKeyRepository;
 import com.alper.digitalwallet.domain.repository.TransactionRepository;
 import com.alper.digitalwallet.domain.repository.WalletRepository;
+import com.alper.digitalwallet.domain.service.IdempotencyService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.dao.DataIntegrityViolationException;
 import java.math.BigDecimal;
 import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import org.mockito.InOrder;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class TransferMoneyUseCaseTest {
@@ -39,14 +35,17 @@ class TransferMoneyUseCaseTest {
     private TransactionRepository transactionRepository;
 
     @Mock
+    private IdempotencyService idempotencyService;
+
+    @Mock
     private IdempotencyKeyRepository idempotencyKeyRepository;
 
     private TransferMoneyUseCase transferMoneyUseCase;
 
-    @org.junit.jupiter.api.BeforeEach
+    @BeforeEach
     void setUp() {
-        transferMoneyUseCase = org.mockito.Mockito.spy(new TransferMoneyUseCase(
-                walletRepository, transactionRepository, idempotencyKeyRepository));
+        transferMoneyUseCase = spy(new TransferMoneyUseCase(
+                walletRepository, transactionRepository, idempotencyService, idempotencyKeyRepository));
     }
 
     @Test
@@ -193,13 +192,10 @@ class TransferMoneyUseCaseTest {
                 .idempotencyKey("idempotency-123")
                 .build();
 
-        // Simulate key already exists (save throws exception)
-        when(idempotencyKeyRepository.save(any(IdempotencyKey.class)))
-                .thenThrow(new DataIntegrityViolationException("Duplicate key"));
-        when(idempotencyKeyRepository.findByKey("idempotency-123"))
-                .thenReturn(Optional.of(idempotencyKey));
-        when(transactionRepository.findByIdempotencyKey("idempotency-123"))
-                .thenReturn(Optional.of(completedTransaction));
+        // Simulate key already exists
+        when(idempotencyService.tryCreateIdempotencyKey("idempotency-123")).thenReturn(false);
+        when(idempotencyKeyRepository.findByKey("idempotency-123")).thenReturn(Optional.of(idempotencyKey));
+        when(idempotencyService.handleExistingIdempotencyKey(any(), any())).thenReturn(completedTransaction);
 
         // When
         Transaction result = transferMoneyUseCase.execute(1L, 2L, new BigDecimal("30.00"), "idempotency-123");
@@ -219,11 +215,11 @@ class TransferMoneyUseCaseTest {
                 .status(IdempotencyKeyStatus.IN_PROGRESS)
                 .build();
 
-        // Simulate key already exists (save throws exception)
-        when(idempotencyKeyRepository.save(any(IdempotencyKey.class)))
-                .thenThrow(new DataIntegrityViolationException("Duplicate key"));
-        when(idempotencyKeyRepository.findByKey("idempotency-123"))
-                .thenReturn(Optional.of(idempotencyKey));
+        // Simulate key already exists
+        when(idempotencyService.tryCreateIdempotencyKey("idempotency-123")).thenReturn(false);
+        when(idempotencyKeyRepository.findByKey("idempotency-123")).thenReturn(Optional.of(idempotencyKey));
+        when(idempotencyService.handleExistingIdempotencyKey(any(), any()))
+                .thenThrow(new IdempotencyConflictException("Ayni idempotency key ile islem devam ediyor. Lutfen bekleyin."));
 
         // When/Then
         IdempotencyConflictException exception = assertThrows(IdempotencyConflictException.class, () ->
@@ -244,11 +240,11 @@ class TransferMoneyUseCaseTest {
                 .status(IdempotencyKeyStatus.FAILED)
                 .build();
 
-        // Simulate key already exists (save throws exception)
-        when(idempotencyKeyRepository.save(any(IdempotencyKey.class)))
-                .thenThrow(new DataIntegrityViolationException("Duplicate key"));
-        when(idempotencyKeyRepository.findByKey("idempotency-123"))
-                .thenReturn(Optional.of(idempotencyKey));
+        // Simulate key already exists
+        when(idempotencyService.tryCreateIdempotencyKey("idempotency-123")).thenReturn(false);
+        when(idempotencyKeyRepository.findByKey("idempotency-123")).thenReturn(Optional.of(idempotencyKey));
+        when(idempotencyService.handleExistingIdempotencyKey(any(), any()))
+                .thenThrow(new IdempotencyConflictException("Onceki islem basarisiz oldu. Lutfen yeni bir idempotency key ile deneyin."));
 
         // When/Then
         IdempotencyConflictException exception = assertThrows(IdempotencyConflictException.class, () ->
@@ -292,10 +288,10 @@ class TransferMoneyUseCaseTest {
             return t;
         });
 
-        // Mock REQUIRES_NEW methods to work in unit test (no real transaction)
-        org.mockito.Mockito.doReturn(true).when(transferMoneyUseCase).tryCreateIdempotencyKey("key-1");
-        org.mockito.Mockito.doReturn(true).when(transferMoneyUseCase).tryCreateIdempotencyKey("key-2");
-        org.mockito.Mockito.doNothing().when(transferMoneyUseCase).completeIdempotencyKey(any(), any());
+        // Mock IdempotencyService methods
+        when(idempotencyService.tryCreateIdempotencyKey("key-1")).thenReturn(true);
+        when(idempotencyService.tryCreateIdempotencyKey("key-2")).thenReturn(true);
+        doNothing().when(idempotencyService).completeIdempotencyKey(any(), any());
 
         // When: Execute two transfers with different idempotency keys
         Transaction result1 = transferMoneyUseCase.execute(1L, 2L, new BigDecimal("10.00"), "key-1");
@@ -308,8 +304,8 @@ class TransferMoneyUseCaseTest {
         assertEquals(new BigDecimal("20.00"), result2.getAmount());
 
         // Verify idempotency key creation was attempted for both
-        verify(transferMoneyUseCase).tryCreateIdempotencyKey("key-1");
-        verify(transferMoneyUseCase).tryCreateIdempotencyKey("key-2");
+        verify(idempotencyService).tryCreateIdempotencyKey("key-1");
+        verify(idempotencyService).tryCreateIdempotencyKey("key-2");
     }
 
     @Test
