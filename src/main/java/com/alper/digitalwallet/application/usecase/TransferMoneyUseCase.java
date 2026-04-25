@@ -41,10 +41,10 @@ public class TransferMoneyUseCase {
             throw new InvalidAmountException("Ayni kullaniciya transfer yapilamaz!");
         }
 
-        Wallet fromWallet = walletRepository.findByUserId(fromUserId)
+        Wallet fromWallet = walletRepository.findByUserIdWithLock(fromUserId)
                 .orElseThrow(() -> new WalletNotFoundException("Gonderen cuzdan bulunamadi!"));
 
-        Wallet toWallet = walletRepository.findByUserId(toUserId)
+        Wallet toWallet = walletRepository.findByUserIdWithLock(toUserId)
                 .orElseThrow(() -> new WalletNotFoundException("Alan cuzdan bulunamadi!"));
 
         if (!fromWallet.getCurrency().equals(toWallet.getCurrency())) {
@@ -89,4 +89,3 @@ public class TransferMoneyUseCase {
         return execute(fromUserId, toUserId, amount, null);
     }
 }
-
