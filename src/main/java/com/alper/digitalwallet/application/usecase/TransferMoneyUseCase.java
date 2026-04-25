@@ -109,11 +109,21 @@ public class TransferMoneyUseCase {
             throw new InvalidAmountException("Ayni kullaniciya transfer yapilamaz!");
         }
 
-        Wallet fromWallet = walletRepository.findByUserIdWithLock(fromUserId)
-                .orElseThrow(() -> new WalletNotFoundException("Gonderen cuzdan bulunamadi!"));
+        // Deterministik lock sırası: küçük userId önce (deadlock önlemi)
+        Long firstUserId = Math.min(fromUserId, toUserId);
+        Long secondUserId = Math.max(fromUserId, toUserId);
 
-        Wallet toWallet = walletRepository.findByUserIdWithLock(toUserId)
-                .orElseThrow(() -> new WalletNotFoundException("Alan cuzdan bulunamadi!"));
+        Wallet firstWallet = walletRepository.findByUserIdWithLock(firstUserId)
+                .orElseThrow(() -> new WalletNotFoundException(
+                        firstUserId.equals(fromUserId) ? "Gonderen cuzdan bulunamadi!" : "Alan cuzdan bulunamadi!"));
+
+        Wallet secondWallet = walletRepository.findByUserIdWithLock(secondUserId)
+                .orElseThrow(() -> new WalletNotFoundException(
+                        secondUserId.equals(fromUserId) ? "Gonderen cuzdan bulunamadi!" : "Alan cuzdan bulunamadi!"));
+
+        // İş kuralı: fromUser bakiyesi azalır, toUser artar
+        Wallet fromWallet = fromUserId.equals(firstUserId) ? firstWallet : secondWallet;
+        Wallet toWallet = toUserId.equals(firstUserId) ? firstWallet : secondWallet;
 
         if (!fromWallet.getCurrency().equals(toWallet.getCurrency())) {
             throw new InvalidCurrencyException("Transfer icin para birimleri ayni olmalidir!");

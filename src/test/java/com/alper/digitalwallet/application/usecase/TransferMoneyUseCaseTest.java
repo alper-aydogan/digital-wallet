@@ -21,10 +21,13 @@ import java.math.BigDecimal;
 import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.mockito.InOrder;
 
 @ExtendWith(MockitoExtension.class)
 class TransferMoneyUseCaseTest {
@@ -145,7 +148,9 @@ class TransferMoneyUseCaseTest {
 
     @Test
     void execute_fromWalletNotFound() {
-        when(walletRepository.findByUserIdWithLock(999L)).thenReturn(Optional.empty());
+        // fromUserId (999) > toUserId (2) olduğu için sıra: 2 -> 999
+        // İlk çağrı 2L için, ikincisi 999L için
+        when(walletRepository.findByUserIdWithLock(2L)).thenReturn(Optional.empty());
 
         assertThrows(WalletNotFoundException.class, () ->
                 transferMoneyUseCase.execute(999L, 2L, new BigDecimal("50.00"))
@@ -161,6 +166,7 @@ class TransferMoneyUseCaseTest {
                 .currency("TRY")
                 .build();
 
+        // fromUserId (1) < toUserId (999) olduğu için sıra: 1 -> 999
         when(walletRepository.findByUserIdWithLock(1L)).thenReturn(Optional.of(fromWallet));
         when(walletRepository.findByUserIdWithLock(999L)).thenReturn(Optional.empty());
 
@@ -341,5 +347,83 @@ class TransferMoneyUseCaseTest {
         // Verify no idempotency key operations
         verify(idempotencyKeyRepository, never()).save(any());
         verify(idempotencyKeyRepository, never()).findByKey(any());
+    }
+
+    @Test
+    void execute_walletLocksAcquiredInDeterministicOrder_smallUserIdFirst() {
+        // Given: fromUserId > toUserId (5 > 3), yani lock sırası 3 -> 5 olmalı
+        Wallet fromWallet = Wallet.builder()
+                .id(5L)
+                .userId(5L)
+                .balance(new BigDecimal("100.00"))
+                .currency("TRY")
+                .build();
+
+        Wallet toWallet = Wallet.builder()
+                .id(3L)
+                .userId(3L)
+                .balance(new BigDecimal("50.00"))
+                .currency("TRY")
+                .build();
+
+        // Deterministik sıra: küçük ID (3) önce, sonra büyük ID (5)
+        when(walletRepository.findByUserIdWithLock(3L)).thenReturn(Optional.of(toWallet));
+        when(walletRepository.findByUserIdWithLock(5L)).thenReturn(Optional.of(fromWallet));
+        when(walletRepository.save(any(Wallet.class))).thenAnswer(i -> i.getArgument(0));
+        when(transactionRepository.save(any(Transaction.class))).thenAnswer(i -> i.getArgument(0));
+
+        // When: 5 -> 3 transfer (fromUserId > toUserId)
+        Transaction result = transferMoneyUseCase.execute(5L, 3L, new BigDecimal("30.00"));
+
+        // Then: İş kuralı korunmalı - fromUser (5) azalır, toUser (3) artar
+        assertNotNull(result);
+        assertEquals(5L, result.getFromWalletId());
+        assertEquals(3L, result.getToWalletId());
+        assertEquals(new BigDecimal("70.00"), fromWallet.getBalance());
+        assertEquals(new BigDecimal("80.00"), toWallet.getBalance());
+
+        // Verify: Lock'lar deterministik sırada alındı (önce 3, sonra 5)
+        InOrder inOrder = inOrder(walletRepository);
+        inOrder.verify(walletRepository).findByUserIdWithLock(eq(3L));
+        inOrder.verify(walletRepository).findByUserIdWithLock(eq(5L));
+    }
+
+    @Test
+    void execute_walletLocksAcquiredInDeterministicOrder_sameOrderRegardlessOfFromTo() {
+        // Given: fromUserId < toUserId (2 < 4), yani lock sırası 2 -> 4 olmalı
+        Wallet fromWallet = Wallet.builder()
+                .id(2L)
+                .userId(2L)
+                .balance(new BigDecimal("100.00"))
+                .currency("TRY")
+                .build();
+
+        Wallet toWallet = Wallet.builder()
+                .id(4L)
+                .userId(4L)
+                .balance(new BigDecimal("50.00"))
+                .currency("TRY")
+                .build();
+
+        // Deterministik sıra: küçük ID (2) önce, sonra büyük ID (4)
+        when(walletRepository.findByUserIdWithLock(2L)).thenReturn(Optional.of(fromWallet));
+        when(walletRepository.findByUserIdWithLock(4L)).thenReturn(Optional.of(toWallet));
+        when(walletRepository.save(any(Wallet.class))).thenAnswer(i -> i.getArgument(0));
+        when(transactionRepository.save(any(Transaction.class))).thenAnswer(i -> i.getArgument(0));
+
+        // When: 2 -> 4 transfer (fromUserId < toUserId)
+        Transaction result = transferMoneyUseCase.execute(2L, 4L, new BigDecimal("30.00"));
+
+        // Then: İş kuralı korunmalı - fromUser (2) azalır, toUser (4) artar
+        assertNotNull(result);
+        assertEquals(2L, result.getFromWalletId());
+        assertEquals(4L, result.getToWalletId());
+        assertEquals(new BigDecimal("70.00"), fromWallet.getBalance());
+        assertEquals(new BigDecimal("80.00"), toWallet.getBalance());
+
+        // Verify: Lock'lar deterministik sırada alındı (önce 2, sonra 4)
+        InOrder inOrder = inOrder(walletRepository);
+        inOrder.verify(walletRepository).findByUserIdWithLock(eq(2L));
+        inOrder.verify(walletRepository).findByUserIdWithLock(eq(4L));
     }
 }
