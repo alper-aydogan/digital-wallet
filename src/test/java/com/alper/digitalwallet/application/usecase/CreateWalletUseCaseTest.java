@@ -76,4 +76,49 @@ class CreateWalletUseCaseTest {
         verify(walletRepository, never()).findByUserId(10L);
         verify(walletRepository, never()).save(any(Wallet.class));
     }
+
+    @Test
+    void execute_invalidCurrencyFormat_lowercase() {
+        assertThrows(InvalidCurrencyException.class, () -> createWalletUseCase.execute(10L, "try"));
+
+        verify(walletRepository, never()).findByUserId(10L);
+        verify(walletRepository, never()).save(any(Wallet.class));
+    }
+
+    @Test
+    void execute_invalidCurrencyFormat_tooLong() {
+        assertThrows(InvalidCurrencyException.class, () -> createWalletUseCase.execute(10L, "TRYY"));
+
+        verify(walletRepository, never()).findByUserId(10L);
+        verify(walletRepository, never()).save(any(Wallet.class));
+    }
+
+    @Test
+    void execute_invalidCurrencyFormat_numeric() {
+        assertThrows(InvalidCurrencyException.class, () -> createWalletUseCase.execute(10L, "123"));
+
+        verify(walletRepository, never()).findByUserId(10L);
+        verify(walletRepository, never()).save(any(Wallet.class));
+    }
+
+    @Test
+    void execute_validCurrency_usd() {
+        Wallet wallet = Wallet.builder()
+                .id(1L)
+                .userId(10L)
+                .balance(BigDecimal.ZERO)
+                .currency("USD")
+                .build();
+
+        when(walletRepository.findByUserId(10L)).thenReturn(Optional.empty());
+        when(walletRepository.save(any(Wallet.class))).thenReturn(wallet);
+
+        Wallet result = createWalletUseCase.execute(10L, "USD");
+
+        assertEquals(10L, result.getUserId());
+        assertEquals(BigDecimal.ZERO, result.getBalance());
+        assertEquals("USD", result.getCurrency());
+        verify(walletRepository).findByUserId(10L);
+        verify(walletRepository).save(any(Wallet.class));
+    }
 }
