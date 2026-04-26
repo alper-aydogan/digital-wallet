@@ -1,0 +1,78 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.errorBanner {
+  padding: 1rem;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 0.5rem;
+  color: var(--danger);
+  font-size: 0.875rem;
+}
+
+.walletCard {
+  grid-column: 1 / -1;
+}
+
+.walletInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.balanceRow {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.balanceLabel {
+  font-size: 1rem;
+  color: var(--gray-600);
+}
+
+.balanceValue {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.walletDetails {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.875rem;
+  color: var(--gray-500);
+}
+
+.transactionsLink {
+  display: inline-block;
+  margin-top: 0.5rem;
+  color: var(--primary);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.transactionsLink:hover {
+  text-decoration: underline;
+}
+
+.noWallet {
+  color: var(--gray-500);
+  font-size: 0.875rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}

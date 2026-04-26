@@ -86,17 +86,57 @@ curl -X GET http://localhost:8080/api/v1/wallets \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWI..."
 ```
 
-## Demo Frontend
+## Frontend (React + TypeScript + Vite)
 
-Open in your browser:
+A modern React frontend is available in the `./frontend` directory.
+
+### Features
+- JWT authentication with token persistence
+- Wallet management (create, view)
+- Deposit / Withdraw / Transfer operations
+- Transaction history with pagination and sorting
+- Idempotency key support for transfers
+- Form validation with Zod
+- Responsive corporate UI
+
+### Quick Start
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+App will run at: http://localhost:5173
+
+### Build for Production
+
+```bash
+cd frontend
+npm run build
+```
+
+### Environment Variables
+
+Create `.env` file in frontend directory (optional):
+```env
+VITE_API_URL=http://localhost:8080
+```
+
+### Pages
+- `/auth` - Login with user ID to get JWT token
+- `/wallet` - Wallet dashboard with all operations
+- `/transactions/:walletId` - Transaction history with pagination
+
+## Demo Frontend (Static HTML)
+
+For a simple static demo without React:
 - `http://localhost:8080/demo/index.html`
-- `http://localhost:8080/` (landing page)
 
 On the demo page:
 1. Generate a demo token
 2. Create a wallet, then deposit/withdraw
 3. Transfer money and list transactions
-4. Inspect all responses on a single screen
 
 ## API Endpoints
 

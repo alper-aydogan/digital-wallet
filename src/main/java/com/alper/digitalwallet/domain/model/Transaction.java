@@ -2,6 +2,8 @@ package com.alper.digitalwallet.domain.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -38,6 +40,10 @@ public class Transaction {
     private BigDecimal amount;
     private LocalDateTime transactionDate;
     private String description;
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private TransactionType type;
 
     @PrePersist
     public void prePersist() {

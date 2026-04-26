@@ -1,5 +1,6 @@
 package com.alper.digitalwallet.application.dto.response;
 
+import com.alper.digitalwallet.domain.model.TransactionType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,5 +20,6 @@ public class TransactionResponse {
     private BigDecimal amount;
     private LocalDateTime transactionDate;
     private String description;
+    private TransactionType type;
 }
 
