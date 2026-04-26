@@ -193,6 +193,7 @@ public class WalletController {
                 .amount(transaction.getAmount())
                 .transactionDate(transaction.getTransactionDate())
                 .description(transaction.getDescription())
+                .type(transaction.getType())
                 .build();
     }
 
