@@ -133,16 +133,16 @@ export function TransactionsPage() {
                       <td>
                         <span
                           className={`${styles.badge} ${
-                            tx.fromWalletId === null
+                            tx.type === 'DEPOSIT'
                               ? styles.deposit
-                              : tx.toWalletId === null
+                              : tx.type === 'WITHDRAWAL'
                               ? styles.withdraw
                               : styles.transfer
                           }`}
                         >
-                          {tx.fromWalletId === null
+                          {tx.type === 'DEPOSIT'
                             ? 'Yatırma'
-                            : tx.toWalletId === null
+                            : tx.type === 'WITHDRAWAL'
                             ? 'Çekme'
                             : 'Transfer'}
                         </span>

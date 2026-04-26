@@ -47,6 +47,7 @@ export interface TransactionResponse {
   amount: string
   transactionDate: string
   description: string | null
+  type: 'DEPOSIT' | 'WITHDRAWAL' | 'TRANSFER'
 }
 
 export interface PageResponse<T> {
