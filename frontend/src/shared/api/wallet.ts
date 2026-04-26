@@ -15,8 +15,8 @@ export async function createWallet(request: CreateWalletRequest): Promise<Wallet
   return response.data
 }
 
-export async function getWallet(userId: number): Promise<WalletResponse> {
-  const response = await apiClient.get<WalletResponse>(`/api/v1/wallets?userId=${userId}`)
+export async function getWallet(): Promise<WalletResponse> {
+  const response = await apiClient.get<WalletResponse>('/api/v1/wallets')
   return response.data
 }
 

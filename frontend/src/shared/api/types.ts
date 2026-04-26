@@ -5,6 +5,14 @@ export interface BackendError {
   timestamp: string
 }
 
+export interface DemoTokenRequest {
+  userId: number
+}
+
+export interface DemoTokenResponse {
+  token: string
+}
+
 export interface CreateWalletRequest {
   userId: number
   currency: string

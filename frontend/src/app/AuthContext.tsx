@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
 
 interface AuthContextType {
   token: string | null
@@ -25,6 +25,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(TOKEN_KEY)
     setToken(null)
   }, [])
+
+  useEffect(() => {
+    const handleUnauthorized = () => logout()
+    window.addEventListener('auth:unauthorized', handleUnauthorized)
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized)
+  }, [logout])
 
   const value: AuthContextType = {
     token,

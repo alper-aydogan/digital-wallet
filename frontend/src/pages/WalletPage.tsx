@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { z } from 'zod'
 import { useAuth } from '@/app/AuthContext'
@@ -10,6 +11,7 @@ import {
   transfer,
 } from '@/shared/api/wallet'
 import { normalizeError } from '@/shared/lib/normalizeError'
+import { getJwtSubject } from '@/shared/lib/jwt'
 import type { WalletResponse } from '@/shared/api/types'
 import { Button, Input, Card } from '@/shared/ui'
 import styles from './WalletPage.module.css'
@@ -21,48 +23,55 @@ const amountSchema = z
   })
 
 export function WalletPage() {
-  const { token } = useAuth()
+  const { token, logout } = useAuth()
   const [wallet, setWallet] = useState<WalletResponse | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const authenticatedUserId = getJwtSubject(token)
+
   // Form states
-  const [createForm, setCreateForm] = useState({ userId: '', currency: 'TRY' })
+  const [createForm, setCreateForm] = useState({ currency: 'TRY' })
   const [depositAmount, setDepositAmount] = useState('')
   const [withdrawAmount, setWithdrawAmount] = useState('')
   const [transferForm, setTransferForm] = useState({ toUserId: '', amount: '', idempotencyKey: '' })
 
-  // Parse userId from token (simple base64 decode)
-  const userId = token ? JSON.parse(atob(token.split('.')[1])).sub : null
-
   const fetchWallet = useCallback(async () => {
-    if (!userId) return
+    if (!authenticatedUserId) {
+      setError('Oturum bilgisi gecersiz. Lutfen tekrar giris yapin.')
+      return
+    }
+
     try {
-      const data = await getWallet(userId)
+      const data = await getWallet()
       setWallet(data)
-    } catch {
+    } catch (err) {
+      const normalized = normalizeError(err)
+      if (normalized.status === 401 || normalized.status === 403) {
+        logout()
+        return
+      }
       setWallet(null)
     }
-  }, [userId])
+  }, [authenticatedUserId, logout])
 
   useEffect(() => {
     fetchWallet()
   }, [fetchWallet])
 
-  const handleCreateWallet = async (e: React.FormEvent) => {
+  const handleCreateWallet = async (e: FormEvent) => {
     e.preventDefault()
     setError(null)
     setIsLoading(true)
 
     try {
-      const parsedUserId = parseInt(createForm.userId, 10)
-      if (isNaN(parsedUserId) || parsedUserId <= 0) {
-        setError('Geçerli bir kullanıcı ID girin')
+      if (!authenticatedUserId) {
+        setError('Kullanici kimligi token icinden okunamadi')
         return
       }
-      await createWallet({ userId: parsedUserId, currency: createForm.currency })
+      await createWallet({ userId: authenticatedUserId, currency: createForm.currency })
       await fetchWallet()
-      setCreateForm({ userId: '', currency: 'TRY' })
+      setCreateForm({ currency: 'TRY' })
     } catch (err) {
       const normalized = normalizeError(err)
       setError(normalized.message)
@@ -71,7 +80,7 @@ export function WalletPage() {
     }
   }
 
-  const handleDeposit = async (e: React.FormEvent) => {
+  const handleDeposit = async (e: FormEvent) => {
     e.preventDefault()
     setError(null)
 
@@ -83,7 +92,11 @@ export function WalletPage() {
 
     setIsLoading(true)
     try {
-      await deposit({ userId: Number(userId), amount: depositAmount })
+      if (!authenticatedUserId) {
+        setError('Kullanici kimligi token icinden okunamadi')
+        return
+      }
+      await deposit({ userId: authenticatedUserId, amount: depositAmount })
       await fetchWallet()
       setDepositAmount('')
     } catch (err) {
@@ -94,7 +107,7 @@ export function WalletPage() {
     }
   }
 
-  const handleWithdraw = async (e: React.FormEvent) => {
+  const handleWithdraw = async (e: FormEvent) => {
     e.preventDefault()
     setError(null)
 
@@ -106,7 +119,11 @@ export function WalletPage() {
 
     setIsLoading(true)
     try {
-      await withdraw({ userId: Number(userId), amount: withdrawAmount })
+      if (!authenticatedUserId) {
+        setError('Kullanici kimligi token icinden okunamadi')
+        return
+      }
+      await withdraw({ userId: authenticatedUserId, amount: withdrawAmount })
       await fetchWallet()
       setWithdrawAmount('')
     } catch (err) {
@@ -117,7 +134,7 @@ export function WalletPage() {
     }
   }
 
-  const handleTransfer = async (e: React.FormEvent) => {
+  const handleTransfer = async (e: FormEvent) => {
     e.preventDefault()
     setError(null)
 
@@ -184,15 +201,7 @@ export function WalletPage() {
         {!wallet && (
           <Card title="Cüzdan Oluştur">
             <form onSubmit={handleCreateWallet} className={styles.form}>
-              <Input
-                label="Kullanıcı ID"
-                type="number"
-                value={createForm.userId}
-                onChange={(e) =>
-                  setCreateForm((prev) => ({ ...prev, userId: e.target.value }))
-                }
-                placeholder="Örn: 1"
-              />
+              <Input label="Kullanıcı ID" value={authenticatedUserId ?? ''} disabled />
               <Input
                 label="Para Birimi"
                 value={createForm.currency}
