@@ -38,8 +38,7 @@ public class IdempotencyService {
     public void completeIdempotencyKey(String key, Long transactionId) {
         IdempotencyKey idempotencyKey = idempotencyKeyRepository.findByKey(key)
                 .orElseThrow(() -> new IllegalStateException("Idempotency key not found: " + key));
-        idempotencyKey.setStatus(IdempotencyKeyStatus.COMPLETED);
-        idempotencyKey.setTransactionId(transactionId);
+        idempotencyKey.complete(transactionId);
         idempotencyKeyRepository.save(idempotencyKey);
     }
 
@@ -48,7 +47,7 @@ public class IdempotencyService {
         IdempotencyKey idempotencyKey = idempotencyKeyRepository.findByKey(key)
                 .orElse(null);
         if (idempotencyKey != null && idempotencyKey.getStatus() == IdempotencyKeyStatus.IN_PROGRESS) {
-            idempotencyKey.setStatus(IdempotencyKeyStatus.FAILED);
+            idempotencyKey.markFailed();
             idempotencyKeyRepository.save(idempotencyKey);
         }
     }
