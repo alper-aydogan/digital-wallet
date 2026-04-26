@@ -9,10 +9,15 @@ export const apiClient = axios.create({
   },
 })
 
+let authToken: string | null = null
+
+export function setAuthToken(token: string | null) {
+  authToken = token
+}
+
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('dw_token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+  if (authToken) {
+    config.headers.Authorization = `Bearer ${authToken}`
   }
   return config
 })

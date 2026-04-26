@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
+import { setAuthToken } from '@/shared/api/client'
 
 interface AuthContextType {
   token: string | null
@@ -13,16 +14,20 @@ const TOKEN_KEY = 'dw_token'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => {
-    return localStorage.getItem(TOKEN_KEY)
+    const storedToken = localStorage.getItem(TOKEN_KEY)
+    setAuthToken(storedToken)
+    return storedToken
   })
 
   const login = useCallback((newToken: string) => {
     localStorage.setItem(TOKEN_KEY, newToken)
+    setAuthToken(newToken)
     setToken(newToken)
   }, [])
 
   const logout = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY)
+    setAuthToken(null)
     setToken(null)
   }, [])
 

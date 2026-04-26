@@ -25,8 +25,6 @@ const amountSchema = z
 export function WalletPage() {
   const { token, logout } = useAuth()
   const [wallet, setWallet] = useState<WalletResponse | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   const authenticatedUserId = getJwtSubject(token)
 
@@ -36,9 +34,14 @@ export function WalletPage() {
   const [withdrawAmount, setWithdrawAmount] = useState('')
   const [transferForm, setTransferForm] = useState({ toUserId: '', amount: '', idempotencyKey: '' })
 
+  // Independent loading and error states for each operation
+  const [createState, setCreateState] = useState({ loading: false, error: null as string | null })
+  const [depositState, setDepositState] = useState({ loading: false, error: null as string | null })
+  const [withdrawState, setWithdrawState] = useState({ loading: false, error: null as string | null })
+  const [transferState, setTransferState] = useState({ loading: false, error: null as string | null })
+
   const fetchWallet = useCallback(async () => {
     if (!authenticatedUserId) {
-      setError('Oturum bilgisi gecersiz. Lutfen tekrar giris yapin.')
       return
     }
 
@@ -61,12 +64,11 @@ export function WalletPage() {
 
   const handleCreateWallet = async (e: FormEvent) => {
     e.preventDefault()
-    setError(null)
-    setIsLoading(true)
+    setCreateState({ loading: true, error: null })
 
     try {
       if (!authenticatedUserId) {
-        setError('Kullanici kimligi token icinden okunamadi')
+        setCreateState({ loading: false, error: 'Kullanici kimligi token icinden okunamadi' })
         return
       }
       await createWallet({ userId: authenticatedUserId, currency: createForm.currency })
@@ -74,26 +76,25 @@ export function WalletPage() {
       setCreateForm({ currency: 'TRY' })
     } catch (err) {
       const normalized = normalizeError(err)
-      setError(normalized.message)
+      setCreateState({ loading: false, error: normalized.message })
     } finally {
-      setIsLoading(false)
+      setCreateState((prev) => ({ ...prev, loading: false }))
     }
   }
 
   const handleDeposit = async (e: FormEvent) => {
     e.preventDefault()
-    setError(null)
+    setDepositState({ loading: true, error: null })
 
     const validation = amountSchema.safeParse(depositAmount)
     if (!validation.success) {
-      setError(validation.error.errors[0].message)
+      setDepositState({ loading: false, error: validation.error.errors[0].message })
       return
     }
 
-    setIsLoading(true)
     try {
       if (!authenticatedUserId) {
-        setError('Kullanici kimligi token icinden okunamadi')
+        setDepositState({ loading: false, error: 'Kullanici kimligi token icinden okunamadi' })
         return
       }
       await deposit({ userId: authenticatedUserId, amount: depositAmount })
@@ -101,26 +102,25 @@ export function WalletPage() {
       setDepositAmount('')
     } catch (err) {
       const normalized = normalizeError(err)
-      setError(normalized.message)
+      setDepositState({ loading: false, error: normalized.message })
     } finally {
-      setIsLoading(false)
+      setDepositState((prev) => ({ ...prev, loading: false }))
     }
   }
 
   const handleWithdraw = async (e: FormEvent) => {
     e.preventDefault()
-    setError(null)
+    setWithdrawState({ loading: true, error: null })
 
     const validation = amountSchema.safeParse(withdrawAmount)
     if (!validation.success) {
-      setError(validation.error.errors[0].message)
+      setWithdrawState({ loading: false, error: validation.error.errors[0].message })
       return
     }
 
-    setIsLoading(true)
     try {
       if (!authenticatedUserId) {
-        setError('Kullanici kimligi token icinden okunamadi')
+        setWithdrawState({ loading: false, error: 'Kullanici kimligi token icinden okunamadi' })
         return
       }
       await withdraw({ userId: authenticatedUserId, amount: withdrawAmount })
@@ -128,29 +128,28 @@ export function WalletPage() {
       setWithdrawAmount('')
     } catch (err) {
       const normalized = normalizeError(err)
-      setError(normalized.message)
+      setWithdrawState({ loading: false, error: normalized.message })
     } finally {
-      setIsLoading(false)
+      setWithdrawState((prev) => ({ ...prev, loading: false }))
     }
   }
 
   const handleTransfer = async (e: FormEvent) => {
     e.preventDefault()
-    setError(null)
+    setTransferState({ loading: true, error: null })
 
     const parsedToUserId = parseInt(transferForm.toUserId, 10)
     if (isNaN(parsedToUserId) || parsedToUserId <= 0) {
-      setError('Geçerli bir alıcı ID girin')
+      setTransferState({ loading: false, error: 'Geçerli bir alıcı ID girin' })
       return
     }
 
     const amountValidation = amountSchema.safeParse(transferForm.amount)
     if (!amountValidation.success) {
-      setError(amountValidation.error.errors[0].message)
+      setTransferState({ loading: false, error: amountValidation.error.errors[0].message })
       return
     }
 
-    setIsLoading(true)
     try {
       await transfer(
         { toUserId: parsedToUserId, amount: transferForm.amount },
@@ -160,16 +159,14 @@ export function WalletPage() {
       setTransferForm({ toUserId: '', amount: '', idempotencyKey: '' })
     } catch (err) {
       const normalized = normalizeError(err)
-      setError(normalized.message)
+      setTransferState({ loading: false, error: normalized.message })
     } finally {
-      setIsLoading(false)
+      setTransferState((prev) => ({ ...prev, loading: false }))
     }
   }
 
   return (
     <div className={styles.container}>
-      {error && <div className={styles.errorBanner}>{error}</div>}
-
       <div className={styles.grid}>
         {/* Wallet Info */}
         <Card title="Cüzdan Bilgileri" className={styles.walletCard}>
@@ -206,11 +203,12 @@ export function WalletPage() {
                 label="Para Birimi"
                 value={createForm.currency}
                 onChange={(e) =>
-                  setCreateForm((prev) => ({ ...prev, currency: e.target.value }))
+                  setCreateForm((prev: typeof createForm) => ({ ...prev, currency: e.target.value }))
                 }
                 placeholder="TRY"
               />
-              <Button type="submit" isLoading={isLoading}>
+              {createState.error && <div className={styles.fieldError}>{createState.error}</div>}
+              <Button type="submit" isLoading={createState.loading}>
                 Cüzdan Oluştur
               </Button>
             </form>
@@ -229,7 +227,8 @@ export function WalletPage() {
                 onChange={(e) => setDepositAmount(e.target.value)}
                 placeholder="0.00"
               />
-              <Button type="submit" isLoading={isLoading}>
+              {depositState.error && <div className={styles.fieldError}>{depositState.error}</div>}
+              <Button type="submit" isLoading={depositState.loading}>
                 Para Yatır
               </Button>
             </form>
@@ -248,7 +247,8 @@ export function WalletPage() {
                 onChange={(e) => setWithdrawAmount(e.target.value)}
                 placeholder="0.00"
               />
-              <Button type="submit" variant="danger" isLoading={isLoading}>
+              {withdrawState.error && <div className={styles.fieldError}>{withdrawState.error}</div>}
+              <Button type="submit" variant="danger" isLoading={withdrawState.loading}>
                 Para Çek
               </Button>
             </form>
@@ -264,7 +264,7 @@ export function WalletPage() {
                 type="number"
                 value={transferForm.toUserId}
                 onChange={(e) =>
-                  setTransferForm((prev) => ({ ...prev, toUserId: e.target.value }))
+                  setTransferForm((prev: typeof transferForm) => ({ ...prev, toUserId: e.target.value }))
                 }
                 placeholder="Örn: 2"
               />
@@ -274,7 +274,7 @@ export function WalletPage() {
                 step="0.01"
                 value={transferForm.amount}
                 onChange={(e) =>
-                  setTransferForm((prev) => ({ ...prev, amount: e.target.value }))
+                  setTransferForm((prev: typeof transferForm) => ({ ...prev, amount: e.target.value }))
                 }
                 placeholder="0.00"
               />
@@ -282,11 +282,12 @@ export function WalletPage() {
                 label="Idempotency Key (opsiyonel)"
                 value={transferForm.idempotencyKey}
                 onChange={(e) =>
-                  setTransferForm((prev) => ({ ...prev, idempotencyKey: e.target.value }))
+                  setTransferForm((prev: typeof transferForm) => ({ ...prev, idempotencyKey: e.target.value }))
                 }
                 placeholder="Tekrarlanabilir işlem anahtarı"
               />
-              <Button type="submit" isLoading={isLoading}>
+              {transferState.error && <div className={styles.fieldError}>{transferState.error}</div>}
+              <Button type="submit" isLoading={transferState.loading}>
                 Transfer Yap
               </Button>
             </form>
