@@ -20,10 +20,12 @@ Production-ready Spring Boot digital wallet API built with Clean Architecture, J
 - Global exception handling
 - Swagger/OpenAPI documentation
 - Actuator monitoring
+- Idempotency key support (deposit, withdraw, transfer)
+- Deadlock-safe concurrent transfers (deterministic lock ordering)
 
 ## Tech Stack
-- Java 17+
-- Spring Boot 4.x
+- Java 21
+- Spring Boot 3.x
 - Spring Web
 - Spring Data JPA
 - Spring Security (JWT)
@@ -38,7 +40,7 @@ Production-ready Spring Boot digital wallet API built with Clean Architecture, J
 **Profile must be set explicitly for safety (no default dev profile):**
 
 ```bash
-cd /Users/alper/Desktop/java_project/digital-wallet
+cd digital-wallet
 cp .env.example .env
 
 # Option 1: Environment variable
@@ -147,6 +149,15 @@ On the demo page:
 - `POST /api/v1/wallets/withdraw` - Withdraw money
 - `POST /api/v1/wallets/transfer` - Transfer money
 
+#### Transfer with idempotency key
+```bash
+curl -X POST http://localhost:8080/api/v1/wallets/transfer \
+  -H "Authorization: Bearer <token>" \
+  -H "Idempotency-Key: unique-uuid-here" \
+  -H "Content-Type: application/json" \
+  -d '{"toUserId": 2, "amount": 100.00}'
+```
+
 ### Transactions
 - `GET /api/v1/wallets/{walletId}/transactions` - Transaction history (paginated)
 
@@ -169,6 +180,7 @@ On the demo page:
 Migrations run automatically on startup:
 ```
 src/main/resources/db/migration/V1__Initial_Schema.sql
+src/main/resources/db/migration/V2__Add_transaction_type.sql
 ```
 
 ### Schema
@@ -177,6 +189,10 @@ src/main/resources/db/migration/V1__Initial_Schema.sql
 - `users` - user data
 
 ## Architecture
+
+This project follows Hexagonal Architecture (Ports and Adapters).
+Domain logic has zero dependency on Spring or any framework —
+all framework code lives in the infrastructure layer.
 
 Layered Clean Architecture:
 ```
@@ -219,8 +235,9 @@ Standardized error response:
 ## CI/CD
 
 GitHub Actions pipeline:
-- Run unit tests on every push
-- Build Docker image on `main` branch pushes
+- `./mvnw clean verify` runs on every push (compile + test + package in one step)
+- Docker image is built only after all tests pass
+- Docker image is pushed to Docker Hub on `main` branch pushes only
 
 ## Environment Variables
 
