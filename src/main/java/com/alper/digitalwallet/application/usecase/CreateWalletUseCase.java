@@ -19,10 +19,7 @@ public class CreateWalletUseCase {
     @Transactional
     public Wallet execute(Long userId, String currency) {
         if (currency == null || currency.isBlank()) {
-            throw new InvalidCurrencyException("Para birimi bos olamaz!");
-        }
-        if (!currency.matches("[A-Z]{3}")) {
-            throw new InvalidCurrencyException("Para birimi 3 büyük harf olmalidir (örn: TRY, USD, EUR)!");
+            throw new InvalidCurrencyException("Para birimi gecersiz olamaz!");
         }
 
         // Duplicate kontrolü: aynı userId için cüzdan varsa hata fırlat

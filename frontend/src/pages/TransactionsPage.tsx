@@ -13,7 +13,7 @@ const SORT_OPTIONS = [
 ]
 
 export function TransactionsPage() {
-  const { walletId } = useParams<{ walletId: string }>
+  const { walletId } = useParams<{ walletId: string }>()
   const [data, setData] = useState<PageResponse<TransactionResponse> | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -22,7 +22,7 @@ export function TransactionsPage() {
     page: 0,
     size: 10,
     sortBy: 'transactionDate' as const,
-    direction: 'DESC' as const,
+    direction: 'DESC' as 'ASC' | 'DESC',
   })
 
   const fetchTransactions = useCallback(async () => {

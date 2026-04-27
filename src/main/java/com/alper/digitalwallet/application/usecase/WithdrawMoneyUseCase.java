@@ -3,7 +3,6 @@ package com.alper.digitalwallet.application.usecase;
 import com.alper.digitalwallet.domain.exception.WalletNotFoundException;
 import com.alper.digitalwallet.domain.model.IdempotencyKey;
 import com.alper.digitalwallet.domain.model.Transaction;
-import com.alper.digitalwallet.domain.model.TransactionType;
 import com.alper.digitalwallet.domain.model.Wallet;
 import com.alper.digitalwallet.domain.repository.IdempotencyKeyRepository;
 import com.alper.digitalwallet.domain.repository.TransactionRepository;
@@ -69,7 +68,7 @@ public class WithdrawMoneyUseCase {
                 .fromWalletId(updatedWallet.getId())
                 .amount(amount)
                 .transactionDate(LocalDateTime.now())
-                .type(TransactionType.WITHDRAWAL)
+                .description("Para Cekme Islemi")
                 .idempotencyKey(idempotencyKey)
                 .build();
         transactionRepository.save(transaction);

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.alper.digitalwallet.infrastructure.config.SecurityPaths;
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -20,18 +21,7 @@ import java.util.ArrayList;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private static final String[] PUBLIC_PATHS = {
-            "/api/v1/auth/**",
-            "/swagger-ui.html",
-            "/swagger-ui/**",
-            "/v3/api-docs/**",
-            "/actuator/health",
-            "/h2-console/**",
-            "/demo",
-            "/demo/**",
-            "/",
-            "/index.html"
-    };
+    private static final String[] PUBLIC_PATHS = SecurityPaths.PUBLIC_PATHS;
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
@@ -61,7 +51,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         userId, null, new ArrayList<>());
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                log.debug("User {} authenticated successfully", userId);
+                log.info("User {} authenticated successfully", userId);
             }
         } catch (Exception ex) {
             log.error("Could not set user authentication in security context", ex);

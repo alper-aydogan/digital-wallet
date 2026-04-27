@@ -32,4 +32,9 @@ public class WalletRepositoryImpl implements WalletRepository {
     public Optional<Wallet> findByUserIdWithLock(Long userId) {
         return walletJpaRepository.findByUserIdWithLock(userId);
     }
+
+    @Override
+    public Optional<Wallet> findByIdWithLock(Long id) {
+        return walletJpaRepository.findByIdWithLock(id);
+    }
 }

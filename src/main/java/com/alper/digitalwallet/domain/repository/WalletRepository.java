@@ -12,4 +12,6 @@ public interface WalletRepository {
     Optional<Wallet> findByUserId(Long userId);
 
     Optional<Wallet> findByUserIdWithLock(Long userId);
+
+    Optional<Wallet> findByIdWithLock(Long id);
 }

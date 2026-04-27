@@ -5,7 +5,6 @@ import com.alper.digitalwallet.domain.exception.InvalidAmountException;
 import com.alper.digitalwallet.domain.exception.WalletNotFoundException;
 import com.alper.digitalwallet.domain.model.IdempotencyKey;
 import com.alper.digitalwallet.domain.model.Transaction;
-import com.alper.digitalwallet.domain.model.TransactionType;
 import com.alper.digitalwallet.domain.model.Wallet;
 import com.alper.digitalwallet.domain.repository.IdempotencyKeyRepository;
 import com.alper.digitalwallet.domain.repository.TransactionRepository;
@@ -36,8 +35,17 @@ public class TransferMoneyUseCase {
                 IdempotencyKey existingKey = idempotencyKeyRepository.findByKey(idempotencyKey)
                         .orElseThrow(() -> new IllegalStateException("Idempotency key not found after conflict"));
 
-                return idempotencyService.handleExistingIdempotencyKey(existingKey,
-                        key -> transactionRepository.findByIdempotencyKey(key));
+                // Cüzdan ID'lerini bul (payload doğrulama için)
+                Wallet fromWalletForCheck = walletRepository.findByUserId(fromUserId)
+                        .orElseThrow(() -> new WalletNotFoundException("Gonderen cuzdan bulunamadi!"));
+                Wallet toWalletForCheck = walletRepository.findByUserId(toUserId)
+                        .orElseThrow(() -> new WalletNotFoundException("Alan cuzdan bulunamadi!"));
+
+                return idempotencyService.handleExistingIdempotencyKeyWithPayloadCheck(existingKey,
+                        key -> transactionRepository.findByIdempotencyKey(key),
+                        fromWalletForCheck.getId(),
+                        toWalletForCheck.getId(),
+                        amount);
             }
         }
 
@@ -67,21 +75,28 @@ public class TransferMoneyUseCase {
             throw new InvalidAmountException("Ayni kullaniciya transfer yapilamaz!");
         }
 
-        // Deterministik lock sırası: küçük userId önce (deadlock önlemi)
-        Long firstUserId = Math.min(fromUserId, toUserId);
-        Long secondUserId = Math.max(fromUserId, toUserId);
+        // Önce cüzdanları kilitsiz olarak bul
+        Wallet fromWalletUnlocked = walletRepository.findByUserId(fromUserId)
+                .orElseThrow(() -> new WalletNotFoundException("Gonderen cuzdan bulunamadi!"));
+        Wallet toWalletUnlocked = walletRepository.findByUserId(toUserId)
+                .orElseThrow(() -> new WalletNotFoundException("Alan cuzdan bulunamadi!"));
 
-        Wallet firstWallet = walletRepository.findByUserIdWithLock(firstUserId)
-                .orElseThrow(() -> new WalletNotFoundException(
-                        firstUserId.equals(fromUserId) ? "Gonderen cuzdan bulunamadi!" : "Alan cuzdan bulunamadi!"));
+        Long fromWalletId = fromWalletUnlocked.getId();
+        Long toWalletId = toWalletUnlocked.getId();
 
-        Wallet secondWallet = walletRepository.findByUserIdWithLock(secondUserId)
-                .orElseThrow(() -> new WalletNotFoundException(
-                        secondUserId.equals(fromUserId) ? "Gonderen cuzdan bulunamadi!" : "Alan cuzdan bulunamadi!"));
+        // Deterministik lock sırası: küçük walletId önce (deadlock önlemi)
+        Long firstWalletId = Math.min(fromWalletId, toWalletId);
+        Long secondWalletId = Math.max(fromWalletId, toWalletId);
 
-        // İş kuralı: fromUser bakiyesi azalır, toUser artar
-        Wallet fromWallet = fromUserId.equals(firstUserId) ? firstWallet : secondWallet;
-        Wallet toWallet = toUserId.equals(firstUserId) ? firstWallet : secondWallet;
+        Wallet firstWallet = walletRepository.findByIdWithLock(firstWalletId)
+                .orElseThrow(() -> new WalletNotFoundException("Cuzdan bulunamadi!"));
+
+        Wallet secondWallet = walletRepository.findByIdWithLock(secondWalletId)
+                .orElseThrow(() -> new WalletNotFoundException("Cuzdan bulunamadi!"));
+
+        // İş kuralı: fromWallet bakiyesi azalır, toWallet artar
+        Wallet fromWallet = fromWalletId.equals(firstWalletId) ? firstWallet : secondWallet;
+        Wallet toWallet = toWalletId.equals(firstWalletId) ? firstWallet : secondWallet;
 
         if (!fromWallet.isSameCurrencyAs(toWallet)) {
             throw new InvalidCurrencyException("Transfer icin para birimleri ayni olmalidir!");
@@ -98,7 +113,7 @@ public class TransferMoneyUseCase {
                 .toWalletId(toWallet.getId())
                 .amount(amount)
                 .transactionDate(LocalDateTime.now())
-                .type(TransactionType.TRANSFER)
+                .description("Para Transferi")
                 .idempotencyKey(idempotencyKey)
                 .build();
 

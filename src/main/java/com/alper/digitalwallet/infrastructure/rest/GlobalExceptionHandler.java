@@ -1,6 +1,7 @@
 package com.alper.digitalwallet.infrastructure.rest;
 
 import com.alper.digitalwallet.domain.exception.IdempotencyConflictException;
+import com.alper.digitalwallet.domain.exception.IdempotencyPayloadMismatchException;
 import com.alper.digitalwallet.domain.exception.InsufficientBalanceException;
 import com.alper.digitalwallet.domain.exception.InvalidCurrencyException;
 import com.alper.digitalwallet.domain.exception.InvalidAmountException;
@@ -67,6 +68,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IdempotencyConflictException.class)
     public ResponseEntity<ErrorResponse> handleIdempotencyConflict(IdempotencyConflictException ex) {
         return buildErrorResponse(HttpStatus.CONFLICT, "IDEMPOTENCY_CONFLICT", ex.getMessage());
+    }
+
+    @ExceptionHandler(IdempotencyPayloadMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleIdempotencyPayloadMismatch(IdempotencyPayloadMismatchException ex) {
+        return buildErrorResponse(HttpStatus.CONFLICT, "IDEMPOTENCY_PAYLOAD_MISMATCH", ex.getMessage());
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

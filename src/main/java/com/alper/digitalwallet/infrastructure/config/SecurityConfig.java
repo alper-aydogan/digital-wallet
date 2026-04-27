@@ -3,6 +3,7 @@ package com.alper.digitalwallet.infrastructure.config;
 import com.alper.digitalwallet.infrastructure.security.JwtAuthenticationFilter;
 import com.alper.digitalwallet.infrastructure.security.RateLimitingFilter;
 import lombok.RequiredArgsConstructor;
+import static com.alper.digitalwallet.infrastructure.config.SecurityPaths.PUBLIC_PATHS;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -33,7 +34,7 @@ public class SecurityConfig {
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/**", "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/webjars/**", "/actuator/health", "/h2-console/**", "/demo", "/demo/**").permitAll()
+                        .requestMatchers(PUBLIC_PATHS).permitAll()
                         .requestMatchers("/api/v1/wallets/**").authenticated()
                         .anyRequest().authenticated()
                 )

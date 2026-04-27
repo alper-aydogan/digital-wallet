@@ -1,5 +1,6 @@
 package com.alper.digitalwallet.application.usecase;
 import com.alper.digitalwallet.domain.exception.IdempotencyConflictException;
+import com.alper.digitalwallet.domain.exception.IdempotencyPayloadMismatchException;
 import com.alper.digitalwallet.domain.exception.InsufficientBalanceException;
 import com.alper.digitalwallet.domain.exception.InvalidAmountException;
 import com.alper.digitalwallet.domain.exception.InvalidCurrencyException;
@@ -421,5 +422,54 @@ class TransferMoneyUseCaseTest {
         InOrder inOrder = inOrder(walletRepository);
         inOrder.verify(walletRepository).findByUserIdWithLock(eq(2L));
         inOrder.verify(walletRepository).findByUserIdWithLock(eq(4L));
+    }
+
+    @Test
+    void execute_idempotencyKeyPayloadMismatch_throwsException() {
+        // Given: Same idempotency key but different amount than original transaction
+        IdempotencyKey idempotencyKey = IdempotencyKey.builder()
+                .id(1L)
+                .key("idempotency-123")
+                .status(IdempotencyKeyStatus.COMPLETED)
+                .transactionId(100L)
+                .build();
+
+        // Original transaction had amount 30.00, but new request has 50.00
+        Transaction completedTransaction = Transaction.builder()
+                .id(100L)
+                .fromWalletId(1L)
+                .toWalletId(2L)
+                .amount(new BigDecimal("30.00"))
+                .idempotencyKey("idempotency-123")
+                .build();
+
+        Wallet fromWallet = Wallet.builder()
+                .id(1L)
+                .userId(1L)
+                .balance(new BigDecimal("100.00"))
+                .currency("TRY")
+                .build();
+
+        Wallet toWallet = Wallet.builder()
+                .id(2L)
+                .userId(2L)
+                .balance(new BigDecimal("50.00"))
+                .currency("TRY")
+                .build();
+
+        when(idempotencyService.tryCreateIdempotencyKey("idempotency-123")).thenReturn(false);
+        when(idempotencyKeyRepository.findByKey("idempotency-123")).thenReturn(Optional.of(idempotencyKey));
+        when(walletRepository.findByUserId(1L)).thenReturn(Optional.of(fromWallet));
+        when(walletRepository.findByUserId(2L)).thenReturn(Optional.of(toWallet));
+        when(transactionRepository.findByIdempotencyKey("idempotency-123")).thenReturn(Optional.of(completedTransaction));
+        when(idempotencyService.handleExistingIdempotencyKeyWithPayloadCheck(any(), any(), any(), any(), any()))
+                .thenThrow(new IdempotencyPayloadMismatchException("Ayni idempotency key ile farkli parametreler gonderildi"));
+
+        // When/Then: Payload mismatch should throw exception
+        IdempotencyPayloadMismatchException exception = assertThrows(IdempotencyPayloadMismatchException.class, () ->
+                transferMoneyUseCase.execute(1L, 2L, new BigDecimal("50.00"), "idempotency-123")
+        );
+
+        assertTrue(exception.getMessage().contains("farkli parametreler"));
     }
 }
