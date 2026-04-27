@@ -19,6 +19,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import java.util.Base64;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -44,12 +46,12 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        String remoteAddr = getClientIp(request);
+        String rateLimitKey = getRateLimitKey(request);
         String endpoint = request.getRequestURI();
 
         try {
             int limitPerMinute = getLimitForEndpoint(endpoint);
-            BucketProxy bucket = resolveBucket(remoteAddr, endpoint, limitPerMinute);
+            BucketProxy bucket = resolveBucket(rateLimitKey, endpoint, limitPerMinute);
             ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
 
             if (!probe.isConsumed()) {
@@ -58,21 +60,67 @@ public class RateLimitingFilter extends OncePerRequestFilter {
                 response.setHeader("Retry-After", String.valueOf(retryAfter));
                 response.setHeader("X-Rate-Limit-Remaining", "0");
                 response.getWriter().write("{\"status\": 429, \"code\": \"RATE_LIMIT_EXCEEDED\", \"message\": \"Too many requests. Retry after " + retryAfter + " seconds\"}");
-                log.warn("Rate limit exceeded for {} on {}", remoteAddr, endpoint);
+                log.warn("Rate limit exceeded for {} on {}", rateLimitKey, endpoint);
                 return;
             }
 
             response.setHeader("X-Rate-Limit-Remaining", String.valueOf(probe.getRemainingTokens()));
         } catch (Exception ex) {
             // Fail-open: Redis/Bucket4j issues should not block app availability.
-            log.warn("Rate limiting skipped due to backend error on {} from {}", endpoint, remoteAddr, ex);
+            log.warn("Rate limiting skipped due to backend error on {} from {}", endpoint, rateLimitKey, ex);
         }
 
         filterChain.doFilter(request, response);
     }
 
-    private BucketProxy resolveBucket(String clientIp, String endpoint, int limitPerMinute) {
-        String key = clientIp + ":" + endpoint;
+    private String getRateLimitKey(HttpServletRequest request) {
+        // User-aware: authenticated requests use userId, public endpoints use IP
+        String userId = extractUserIdFromJwt(request);
+        if (userId != null) {
+            return "user:" + userId;
+        }
+        return "ip:" + getClientIp(request);
+    }
+
+    private String extractUserIdFromJwt(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return null;
+        }
+        
+        try {
+            String token = authHeader.substring(7);
+            String[] parts = token.split("\\.");
+            if (parts.length != 3) {
+                return null;
+            }
+            
+            // Decode payload (base64)
+            String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
+            
+            // Simple JSON extraction for "sub" field
+            int subIndex = payload.indexOf("\"sub\"");
+            if (subIndex == -1) {
+                return null;
+            }
+            
+            int colonIndex = payload.indexOf(':', subIndex);
+            int quoteStart = payload.indexOf('"', colonIndex);
+            int quoteEnd = payload.indexOf('"', quoteStart + 1);
+            
+            if (quoteStart != -1 && quoteEnd != -1) {
+                return payload.substring(quoteStart + 1, quoteEnd);
+            }
+        } catch (Exception e) {
+            // Invalid token format, fall back to IP-based
+            log.debug("Could not extract userId from JWT, falling back to IP-based rate limiting");
+        }
+        
+        return null;
+    }
+
+    private BucketProxy resolveBucket(String rateLimitKey, String endpoint, int limitPerMinute) {
+        String key = rateLimitKey + ":" + endpoint;
         Supplier<BucketConfiguration> configSupplier = () -> BucketConfiguration.builder()
                 .addLimit(Bandwidth.builder()
                         .capacity(limitPerMinute)

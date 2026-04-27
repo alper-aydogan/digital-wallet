@@ -58,8 +58,12 @@ public class WithdrawMoneyUseCase {
     }
 
     private Wallet performWithdraw(Long userId, BigDecimal amount, String idempotencyKey) {
-        Wallet wallet = walletRepository.findByUserId(userId)
+        // Kilitsiz bul, sonra ID ile lock'lu al (pessimistic lock)
+        Wallet walletUnlocked = walletRepository.findByUserId(userId)
                 .orElseThrow(() -> new WalletNotFoundException("Kullaniciya ait cuzdan bulunamadi!"));
+        
+        Wallet wallet = walletRepository.findByIdWithLock(walletUnlocked.getId())
+                .orElseThrow(() -> new WalletNotFoundException("Kilitli cuzdan bulunamadi!"));
 
         wallet.debit(amount);
         Wallet updatedWallet = walletRepository.save(wallet);
